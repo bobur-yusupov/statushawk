@@ -26,6 +26,8 @@ Out of Scope:
 - Agent-based Monitoring: We do not install agents on user servers.
 - Log Aggregation: We monitor availability, not internal application logs.
 
+## System architecture
+
 ### Architectural Goals
 
 Decisions in this document are driven by the following quality attributes:
@@ -37,3 +39,32 @@ Decisions in this document are driven by the following quality attributes:
 - **Data Integrity**: Historical uptime data is immutable and must be preserved accurately for SLA reporting.
 
 - **Developer Experience**: As an open-source project, the system must be runnable locally via Docker Compose with minimal configuration, despite its distributed nature.
+
+This diagram represents the high-level architecture of StatusHawk, illustrating the separation of concerns between the user-facing application (React), the API/Management layer (Django), and the distributed execution layer (Celery Runners).
+
+![StatusHawk Architecture](./images/system-architecture.png)
+
+### Service description
+
+|Service Name|Responsibility|Tech Stack|Key Dependencies|
+|------------|--------------|----------|----------------|
+|Frontend|Delivers the Single Page Application (SPA) bundle to the browser. Handles client-side routing and visualization of uptime graphs.|"React 18, Vite, TailwindCSS"|Nginx (serving static files)|
+|API Gateway|"The ""Brain"" of the operation. Manages Users, Billing, and Monitor Configurations. It does not perform network checks itself. It exposes a public API for status pages and a private API for the dashboard."|"Python 3.10+, Django 4, DRF"|"PostgreSQL, Redis"|
+|Runner Service|"The ""Muscle"" of the operation. Stateless worker nodes that pick up check tasks from the queue, execute network requests (HTTP/TCP), and determine if an endpoint is UP or DOWN."|"Python 3.10+, Celery"|"Redis (Broker), PostgreSQL (Result storage)"|
+|Scheduler (Beat)|"A singleton process (part of the Runner stack) that reads active monitors from the DB and creates task definitions in Redis at the defined interval (e.g., every 60s)."|Celery Beat|"Redis, PostgreSQL|
+
+### Technology Decisions
+
+#### Why Microservices?
+
+While a monolith is simpler, we separated the API from the Runner to ensure isolation.
+
+- Scenario: A user configures a monitor that triggers an infinite loop or a timeout.
+- Result: This might crash a Runner worker process, but the API and Dashboard remain 100% responsive for other users.
+
+#### Why Redis?
+
+Redis serves a dual purpose in StatusHawk:
+
+1. Queue Broker: It manages the high-throughput stream of "Check Now" tasks between the Scheduler and Runners.
+2. Cache: Public status pages are read-heavy. To prevent the Database from crashing during a widespread outage (the "thundering herd" problem), status page JSON is cached in Redis for 60 seconds.
