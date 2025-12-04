@@ -4,27 +4,36 @@ This document contains system architecture of StatusHawk - Uptime Monitoring & S
 
 ## Introduction
 
-### Project Overview
+### Project Ovewview
 
-A concise summary of **StatusHawk** as a multi-tenant SaaS application for uptime monitoring, status pages, and notification alerting.
+StatusHawk is an open-source, multi-tenant SaaS platform designed for uptime monitoring and incident communication. It allows users to register endpoints (HTTP/HTTPS, TCP, Ping) and continuously monitors their availability and response metrics. When downtime is detected, the system triggers multi-channel alerts and updates public-facing status pages.
 
-### Business Goals
+Unlike simple cron-based scripts, StatusHawk is engineered as a distributed system capable of scaling to handle thousands of concurrent checks with high precision and minimal latency.
 
-- Provide real-time monitoring of customer endpoints.
-- Support a customizable, public-facing status page for each tenant.
-- Achieve high availability and scalability for asynchronous monitoring jobs.
+### Purpose and Scope
 
-## Microservices
+The primary objective of this architecture is to provide a robust framework that separates the management of monitors (CRUD) from the execution of monitors (Runners).
 
-| Service Name | Primary Function | Technology Stack | Data Store |
-|--------------|------------------|------------------|------------|
-| Frontend     | User Interface (SPA) | React, Vite      | N/A        |
-| API Gateway  | Auth & Routing | DRF | PostgreSQL |
-| Account Service | User & Billing CRUD | DRF | PostgreSQL |
-| Monitor Service | Config & Check Storage | DRF | PostgreSQL |
-| Runner Service | Asynchronous Monitoring | Python / Celery | Redis (Broker/Cache), PostgreSQL (History) |
+In Scope:
 
-### Inter-Service Communication
+- Uptime Monitoring: Periodic HTTP, TCP and ICMP checks.
+- Status Pages: Publicly accessible pages displaying historical uptime and active incidents.
+- Alerting: Integration with Email.
+- Team Management: Multi-user accounts with role-based access.
 
-- **Synchronous Communication**: All requests from the Frontend go through the API Gateway. The Gateway communicates with internal services using standard RESTful HTTP/JSON over Kubernetes' internal ClusterIP Services.
-- **Asynchronous Communication**: The Monitor Service sends monitoring jobs to the Runner Service via a message queue (Redis). This ensures the API Gateway does not wait for long-running checks.
+Out of Scope:
+
+- Agent-based Monitoring: We do not install agents on user servers.
+- Log Aggregation: We monitor availability, not internal application logs.
+
+### Architectural Goals
+
+Decisions in this document are driven by the following quality attributes:
+
+- **Scalability**: The system must handle a growing number of monitors without degrading check accuracy. The Runner Service must be horizontally scalable to distribute the load of network requests.
+
+- **Isolation**: A failure in the Web Dashboard or API must not stop the Runner Service from performing checks and sending alerts.
+
+- **Data Integrity**: Historical uptime data is immutable and must be preserved accurately for SLA reporting.
+
+- **Developer Experience**: As an open-source project, the system must be runnable locally via Docker Compose with minimal configuration, despite its distributed nature.
