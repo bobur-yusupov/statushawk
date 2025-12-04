@@ -68,3 +68,25 @@ Redis serves a dual purpose in StatusHawk:
 
 1. Queue Broker: It manages the high-throughput stream of "Check Now" tasks between the Scheduler and Runners.
 2. Cache: Public status pages are read-heavy. To prevent the Database from crashing during a widespread outage (the "thundering herd" problem), status page JSON is cached in Redis for 60 seconds.
+
+## Data Architecture
+
+The database schema centers around the `Monitor` entity, which links users to their configuration and the resulting historical data.
+
+![Entity Relationship Diagram](./images/data-diagram.png)
+
+## Core workflow
+
+![Workflow](./images/workflow.png)
+
+### Failure Confirmation Logic (Avoiding False Positives)
+
+To prevent "flapping" (sending alerts for temporary network blips), StatusHawk implements a Double-Check Strategy. We do not alert on the very first socket timeout.
+
+#### Logic Flow
+
+1. First Failure: The Runner detects a timeout or 500 error. The Runner does not write to the DB yet. It immediately triggers a "Retry" within the same process (or re-queues high priority).
+2. Second Failure (Confirmation): The retry also fails.
+    - Action: The incident is confirmed.
+    - DB: A new Incident row is created.
+    - Alert: Notifications are dispatched to the user.
