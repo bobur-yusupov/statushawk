@@ -2,7 +2,7 @@
 
 |Metadata|Details|
 |--------|-------|
-|Status| Draft |
+|Status| Approved |
 |Author|@bobur-yusupov|
 |Created|2025-12-05"|
 |Issue|#3|
@@ -126,12 +126,12 @@ Describe how the backend handles the logic.
 
 - `test_create_user_success`
 - `test_create_user_duplicate_email`
-- `test_create_user_duplicate_username`
 - `test_user_string`
 - `test_email_normalization`
 - `test_create_user_with_short_password`
-- `test_user_defaults`
-- `test_email_case_insensitivity_db`
+- `test_create_user_with_no_email`
+- `test_create_superuser`
+- `test_create_superuser_with_no_email`
 
 ##### User signup endpoint
 

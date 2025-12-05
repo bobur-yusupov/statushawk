@@ -1,29 +1,35 @@
-[project]
+[tool.poetry]
 name = "api-gateway"
 version = "0.1.0"
 description = "Django Service"
-authors = [
-    {name = "Bobur Yusupov",email = "yusufi.bobur@gmail.com"}
-]
+package-mode = false
+authors = ["Bobur Yusupov <yusufi.bobur@gmail.com>"]
 readme = "README.md"
-requires-python = "^3.12"
-dependencies = [
-    "django (>=6.0,<7.0)",
-    "django-cors-headers (>=4.9.0,<5.0.0)",
-    "djangorestframework (>=3.16.1,<4.0.0)",
-    "psycopg2-binary (>=2.9.11,<3.0.0)"
-]
+packages = []
 
+[tool.poetry.dependencies]
+python = "^3.12"
+django = "^6.0"
+django-cors-headers = "^4.9.0"
+djangorestframework = "^3.16.1"
+psycopg2-binary = "^2.9.11"
+pytest-django = "^4.11.1"
+
+[tool.poetry.group.dev.dependencies]
+black = "^25.11.0"
+flake8 = "^7.3.0"
+mypy = "^1.19.0"
+pytest = "^9.0.1"
+drf-spectacular = "^0.29.0"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["test_*.py", "*_test.py"]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::django.utils.deprecation.RemovedInDjango70Warning",
+]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
-
-[dependency-groups]
-dev = [
-    "black (>=25.11.0,<26.0.0)",
-    "flake8 (>=7.3.0,<8.0.0)",
-    "mypy (>=1.19.0,<2.0.0)",
-    "pytest (>=9.0.1,<10.0.0)",
-    "drf-spectacular (>=0.29.0,<0.30.0)"
-]
