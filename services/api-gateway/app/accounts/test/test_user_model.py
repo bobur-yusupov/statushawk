@@ -4,9 +4,9 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-def create_user(email: str = 'test@example.com', password: str = 'testpass123', **extra_fields):
+def create_user(email: str = 'test@example.com', password: str = 'testpass123'):
     """Helper function to create a user"""
-    return User.objects.create_user(email=email, password=password, extra_fields=extra_fields)
+    return User.objects.create_user(email=email, password=password)
 
 @pytest.mark.django_db
 def test_create_user() -> None:
@@ -25,8 +25,9 @@ def test_create_user() -> None:
 
     # Verify the results
     assert user.email == 'test@example.com'
-    assert user.check_password('testpass123')
-    assert user.name == 'Test User'
+    assert user.check_password('SecurePassword!123')
+    assert user.first_name == "John"
+    assert user.last_name == "Doe"
 
     # Verify user is active by default
     assert user.is_active is True
@@ -44,15 +45,10 @@ def test_create_user_duplicate_email() -> None:
     email: str = 'test@example.com'
     password: str = "SecurePassword!123"
 
-    payload: Dict[str, str] = {
-        "first_name": "John", 
-        "last_name": "Doe",
-    }
-
-    user1 = create_user(email=email, password=password, **payload)
+    create_user(email=email, password=password)
 
     with pytest.raises(Exception):
-        user2 = create_user(email=email, password=password, **payload)
+        create_user(email=email, password=password)
 
 @pytest.mark.django_db
 def test_user_string() -> None:
@@ -69,8 +65,8 @@ def test_user_string() -> None:
 def test_email_normalization() -> None:
     EMAILS = [
         ('test@EXAMPLE.com', 'test@example.com'),
-        ('Test@Example.Com', 'test@example.com'),
-        ('TEST@EXAMPLE.COM', 'test@example.com'),
+        ('Admin@Example.Com', 'admin@example.com'),
+        ('USER@EXAMPLE.COM', 'user@example.com'),
     ]
 
     for email, expected in EMAILS:
@@ -83,7 +79,7 @@ def test_create_user_with_short_password() -> None:
     password: str = "pw"
 
     with pytest.raises(Exception):
-        user = User.objects.create_user(email=email, password=password)
+        User.objects.create_user(email=email, password=password)
 
 @pytest.mark.django_db
 def test_create_user_with_no_email() -> None:
@@ -91,7 +87,7 @@ def test_create_user_with_no_email() -> None:
     password: str = "SecurePassword!123"
 
     with pytest.raises(Exception):
-        user = User.objects.create_user(email=email, password=password)
+        User.objects.create_user(email=email, password=password)
 
 @pytest.mark.django_db
 def test_create_superuser() -> None:
@@ -109,4 +105,4 @@ def test_create_superuser_with_no_email() -> None:
     password: str = "SecurePassword!123"
 
     with pytest.raises(Exception):
-        user = User.objects.create_superuser(email=email, password=password)
+        User.objects.create_superuser(email=email, password=password)
