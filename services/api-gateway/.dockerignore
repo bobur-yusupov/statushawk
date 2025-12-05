@@ -25,7 +25,6 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
-.db/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -168,6 +167,7 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+.git
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can

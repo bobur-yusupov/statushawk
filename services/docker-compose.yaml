@@ -1,0 +1,86 @@
+version: "3.9"
+
+services:
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./api-gateway/.env
+    volumes:
+      - ./api-gateway:/app
+    depends_on:
+      - auth-db
+    command: >
+      sh -c "python manage.py migrate &&
+      python manage.py runserver 0.0.0.0:8000"
+  
+  scheduler:
+    build:
+      context: ./scheduler
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8001:8000"
+    env_file:
+      - ./scheduler/.env
+    volumes:
+      - ./scheduler:/app
+    depends_on:
+      - scheduler-db
+    command: >
+      sh -c "python manage.py migrate &&
+      python manage.py runserver 0.0.0.0:8000"
+
+  auth-db:
+    image: postgres:17
+    env_file:
+      - ./api-gateway/.env
+    volumes:
+      - ./.db/auth/:/var/lib/postgresql/data
+  
+  scheduler-db:
+    image: postgres:17
+    env_file:
+      - ./scheduler/.env
+    volumes:
+      - ./.db/scheduler/:/var/lib/postgresql/data
+
+  runner-redis:
+    image: redis:8-alpine 
+    container_name: redis_service
+    
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+    volumes:
+      - redis_data:/data
+      
+    # 5. Add a Password
+    command: redis-server --appendonly yes --requirepass "super_secret_redis_password"
+    
+    # 6. Healthcheck (Crucial for dependent services)
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "super_secret_redis_password", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+  
+  redis-insight:
+    image: redis/redisinsight:latest
+    container_name: redis_insight
+    restart: always
+    ports:
+      - "5540:5540"
+    user: root  # <--- ADD THIS LINE
+    depends_on:
+      - runner-redis
+    volumes:
+      - ./.db/redis_insight_data:/data
+
+# Define the volume at the bottom of the file
+volumes:
+  redis_data:
+  
