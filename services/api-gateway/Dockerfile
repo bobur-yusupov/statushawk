@@ -30,3 +30,4 @@ COPY ./app /app/app
 EXPOSE 8000
 
 CMD ["poetry", "run", "python", "app/manage.py", "runserver", "0.0.0.0:8000"]
+
