@@ -75,7 +75,7 @@ jobs:
               run: |
                 cd services/api-gateway
                 # Install dependencies so Poetry can read its context
-                poetry install --no-dev --no-interaction 
+                poetry install --only main --no-interaction 
                 
                 # Logic to determine bump type (Major, Minor, or Patch) based on last commit
                 COMMIT_MESSAGE=$(git log -1 --pretty=%B)
