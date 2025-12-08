@@ -1,4 +1,4 @@
-from typing import Type, Any, Optional, Union
+from typing import Type, Any, Optional, Union, Dict
 from django.http import HttpRequest
 from rest_framework.generics import CreateAPIView
 from rest_framework.serializers import Serializer
@@ -6,11 +6,14 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.throttling import SimpleRateThrottle
 from rest_framework.parsers import JSONParser
-from rest_framework import status, permissions
-from .serializers import UserSerializer
+from rest_framework import status, permissions, views, authentication
+from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.authtoken.models import Token
+from common.utils import generate_timestamp_iso
+from .serializers import UserSerializer, LoginSerializer
 
 
-class SignUpThrottle(SimpleRateThrottle):
+class AuthThrottle(SimpleRateThrottle):
     scope = "signup"
 
     rate = "5/min"
@@ -28,7 +31,7 @@ class SignUpThrottle(SimpleRateThrottle):
 class SignUpView(CreateAPIView):
     serializer_class: Type[Serializer] = UserSerializer
     http_method_names = ["post"]
-    throttle_classes = [SignUpThrottle]
+    throttle_classes = [AuthThrottle]
     parser_classes = [JSONParser]
     permission_classes = [permissions.AllowAny]
 
@@ -52,11 +55,65 @@ class SignUpView(CreateAPIView):
             serializer.save()
 
             return Response(
-                data={"status": "ok", "data": serializer.data},
+                data={"status": "ok", "timestamp": generate_timestamp_iso(), "data": serializer.data},
                 status=status.HTTP_201_CREATED,
             )
 
         return Response(
-            data={"status": "error", "data": serializer.errors},
+            data={"status": "error", "timestamp": generate_timestamp_iso(), "data": serializer.errors},
             status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class LoginView(ObtainAuthToken):
+    throttle_classes = [AuthThrottle]
+    permission_classes = [permissions.AllowAny]
+    parser_classes = [JSONParser]
+    http_method_names = ["post"]
+    serializer_class: Type[Serializer] = LoginSerializer
+
+    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        serializer = self.get_serializer(data=request.data)
+        
+        if not serializer.is_valid():
+            return Response(
+                data={
+                    "status": "error",
+                    "timestamp": generate_timestamp_iso(),
+                    "data": None,
+                    "error": serializer.errors
+                },
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        user = serializer.validated_data["user"]
+        token, created = Token.objects.get_or_create(user=user)
+        response_data: Dict[str, Any] = {
+            "status": "ok",
+            "timestamp": generate_timestamp_iso(),
+            "data": {
+                "token": token.key
+            }
+        }
+
+        return Response(data=response_data, status=status.HTTP_201_CREATED)
+
+
+class LogoutView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [authentication.TokenAuthentication]
+
+    def post(self, request: Request) -> Response:
+        if request.auth:
+            request.auth.delete()
+        message = "Successfully logged out."
+        return Response(
+            data={
+                "status": "ok",
+                "timestamp": generate_timestamp_iso(),
+                "data": {
+                    "message": message,
+                }
+            },
+            status=status.HTTP_200_OK
         )

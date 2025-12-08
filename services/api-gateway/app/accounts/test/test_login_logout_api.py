@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractBaseUser
 from django.urls import reverse
 from rest_framework.test import APIClient
+from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from rest_framework import status
 
@@ -114,23 +115,22 @@ def test_login_invalid_email_format(
         LOGIN_ENDPOINT, data=payload, content_type="application/json"
     )
 
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 @pytest.mark.django_db
-def test_login_empty_strings(
-    api_client: APIClient, test_user: AbstractBaseUser
-) -> None:
+def test_login_empty_strings(test_user: AbstractBaseUser) -> None:
+    client = APIClient()
     payload: Dict[str, str] = {
         "email": "",
         "password": "",
     }
 
-    response: Response = api_client.post(
-        LOGIN_ENDPOINT, data=payload, content_type="application/json"
+    response: Response = client.post(
+        LOGIN_ENDPOINT, data=payload, content_type="application/json", REMOTE_ADDR="192.168.1.10"
     )
 
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 @pytest.mark.django_db
@@ -170,9 +170,14 @@ def test_logout_invalid_token(api_client: APIClient) -> None:
 
 
 @pytest.mark.django_db
-def test_double_logout(auth_api_client: APIClient) -> None:
-    response1: Response = auth_api_client.post(LOGOUT_ENDPOINT)
+def test_double_logout(test_user: AbstractBaseUser) -> None:
+    
+    client: APIClient = APIClient()
+    token = Token.objects.create(user=test_user)
+    client.credentials(HTTP_AUTHORIZATION=f'Token {token.key}')
+    
+    response1: Response = client.post(LOGOUT_ENDPOINT)
     assert response1.status_code == status.HTTP_200_OK
 
-    response2: Response = auth_api_client.post(LOGOUT_ENDPOINT)
+    response2: Response = client.post(LOGOUT_ENDPOINT)
     assert response2.status_code == status.HTTP_401_UNAUTHORIZED
