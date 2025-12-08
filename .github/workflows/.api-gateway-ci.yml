@@ -70,12 +70,14 @@ jobs:
               uses: snok/install-poetry@v1 
               with:
                 version: 2.2.1
+                virtualenvs-create: true
+                virtualenvs-in-project: true
 
             - name: Determine & Bump Version
               run: |
                 cd services/api-gateway
                 # Install dependencies so Poetry can read its context
-                poetry install --only main --no-root --no-interaction 
+                poetry install --only main --no-root --no-interaction
                 
                 # Logic to determine bump type (Major, Minor, or Patch) based on last commit
                 COMMIT_MESSAGE=$(git log -1 --pretty=%B)
