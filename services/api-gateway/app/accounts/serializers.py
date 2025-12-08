@@ -24,17 +24,19 @@ class LoginSerializer(serializers.Serializer):
         style={
             "input_type": "password",
         },
-        trim_whitespace=False
+        trim_whitespace=False,
     )
 
     def validate(self, attrs: Dict[Any, Any]) -> Dict[Any, Any]:
-        email: str = attrs.get("email")
-        password: str = attrs.get("password")
-        user = authenticate(request=self.context.get("request"), username=email, password=password)
+        email = attrs.get("email")
+        password = attrs.get("password")
+        user = authenticate(
+            request=self.context.get("request"), username=email, password=password
+        )
 
         if not user:
             message = "Unable to log in with provided credentials."
             raise serializers.ValidationError(message, code="authorization")
-        
+
         attrs["user"] = user
         return attrs

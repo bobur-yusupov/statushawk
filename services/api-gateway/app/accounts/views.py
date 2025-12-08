@@ -55,12 +55,20 @@ class SignUpView(CreateAPIView):
             serializer.save()
 
             return Response(
-                data={"status": "ok", "timestamp": generate_timestamp_iso(), "data": serializer.data},
+                data={
+                    "status": "ok",
+                    "timestamp": generate_timestamp_iso(),
+                    "data": serializer.data,
+                },
                 status=status.HTTP_201_CREATED,
             )
 
         return Response(
-            data={"status": "error", "timestamp": generate_timestamp_iso(), "data": serializer.errors},
+            data={
+                "status": "error",
+                "timestamp": generate_timestamp_iso(),
+                "data": serializer.errors,
+            },
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -74,16 +82,16 @@ class LoginView(ObtainAuthToken):
 
     def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         serializer = self.get_serializer(data=request.data)
-        
+
         if not serializer.is_valid():
             return Response(
                 data={
                     "status": "error",
                     "timestamp": generate_timestamp_iso(),
                     "data": None,
-                    "error": serializer.errors
+                    "error": serializer.errors,
                 },
-                status=status.HTTP_401_UNAUTHORIZED
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
         user = serializer.validated_data["user"]
@@ -91,9 +99,7 @@ class LoginView(ObtainAuthToken):
         response_data: Dict[str, Any] = {
             "status": "ok",
             "timestamp": generate_timestamp_iso(),
-            "data": {
-                "token": token.key
-            }
+            "data": {"token": token.key},
         }
 
         return Response(data=response_data, status=status.HTTP_201_CREATED)
@@ -113,7 +119,7 @@ class LogoutView(views.APIView):
                 "timestamp": generate_timestamp_iso(),
                 "data": {
                     "message": message,
-                }
+                },
             },
-            status=status.HTTP_200_OK
+            status=status.HTTP_200_OK,
         )

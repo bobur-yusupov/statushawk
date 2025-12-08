@@ -35,7 +35,10 @@ def test_signup_success() -> None:
     }
 
     response: Response = client.post(
-        path=SIGNUP_ENDPOINT, data=payload, content_type="application/json", REMOTE_ADDR="192.168.1.1"
+        path=SIGNUP_ENDPOINT,
+        data=payload,
+        content_type="application/json",
+        REMOTE_ADDR="192.168.1.1",
     )
 
     assert response.status_code == status.HTTP_201_CREATED
@@ -60,7 +63,10 @@ def test_signup_duplicate_email(test_user: AbstractBaseUser) -> None:
     }
 
     response: Response = client.post(
-        path=SIGNUP_ENDPOINT, data=payload, content_type="application/json", REMOTE_ADDR="192.168.1.2"
+        path=SIGNUP_ENDPOINT,
+        data=payload,
+        content_type="application/json",
+        REMOTE_ADDR="192.168.1.2",
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -79,7 +85,10 @@ def test_signup_short_password() -> None:
     }
 
     response: Response = client.post(
-        path=SIGNUP_ENDPOINT, data=payload, content_type="application/json", REMOTE_ADDR="192.168.1.3"
+        path=SIGNUP_ENDPOINT,
+        data=payload,
+        content_type="application/json",
+        REMOTE_ADDR="192.168.1.3",
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -98,7 +107,10 @@ def test_signup_email_normalization() -> None:
     }
 
     response: Response = client.post(
-        path=SIGNUP_ENDPOINT, data=payload, content_type="application/json", REMOTE_ADDR="192.168.1.4"
+        path=SIGNUP_ENDPOINT,
+        data=payload,
+        content_type="application/json",
+        REMOTE_ADDR="192.168.1.4",
     )
 
     assert response.status_code == status.HTTP_201_CREATED

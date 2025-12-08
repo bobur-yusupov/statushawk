@@ -127,7 +127,10 @@ def test_login_empty_strings(test_user: AbstractBaseUser) -> None:
     }
 
     response: Response = client.post(
-        LOGIN_ENDPOINT, data=payload, content_type="application/json", REMOTE_ADDR="192.168.1.10"
+        LOGIN_ENDPOINT,
+        data=payload,
+        content_type="application/json",
+        REMOTE_ADDR="192.168.1.10",
     )
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -171,11 +174,11 @@ def test_logout_invalid_token(api_client: APIClient) -> None:
 
 @pytest.mark.django_db
 def test_double_logout(test_user: AbstractBaseUser) -> None:
-    
+
     client: APIClient = APIClient()
-    token = Token.objects.create(user=test_user)
-    client.credentials(HTTP_AUTHORIZATION=f'Token {token.key}')
-    
+    token, created = Token.objects.get_or_create(user=test_user)
+    client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+
     response1: Response = client.post(LOGOUT_ENDPOINT)
     assert response1.status_code == status.HTTP_200_OK
 
