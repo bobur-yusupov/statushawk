@@ -116,6 +116,9 @@ jobs:
     build-and-push:
         runs-on: ubuntu-latest
         needs: version
+        if: github.ref == 'refs/heads/main' && 
+            github.event_name == 'push' && 
+            (needs.version.result == 'success' || needs.version.result == 'skipped')
         steps:
             - uses: actions/checkout@v4
               with:
