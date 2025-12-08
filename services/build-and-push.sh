@@ -28,7 +28,6 @@ if ! cd "$SERVICE_DIR"; then
     exit 1
 fi
 
-source ./.venv/bin/activate
 # Get the SemVer tag (e.g., 1.0.1)
 NEW_VERSION=$(poetry version --short)
 
