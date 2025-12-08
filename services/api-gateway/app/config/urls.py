@@ -7,7 +7,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 urlpatterns: List[Union[URLPattern, URLResolver]] = [
     path("admin/", admin.site.urls),
-    path("api/v1/accounts", include("accounts.urls")),
+    path("api/v1/accounts/", include("accounts.urls")),
 ]
 
 if settings.DEBUG:

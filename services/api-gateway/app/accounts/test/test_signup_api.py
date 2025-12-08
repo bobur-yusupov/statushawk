@@ -25,7 +25,8 @@ def test_user() -> "AbstractBaseUser":
 
 
 @pytest.mark.django_db
-def test_signup_success(api_client: APIClient) -> None:
+def test_signup_success() -> None:
+    client = APIClient()
     payload: Dict[str, str] = {
         "first_name": "John",
         "last_name": "Doe",
@@ -33,8 +34,11 @@ def test_signup_success(api_client: APIClient) -> None:
         "password": "SecurePassword!123",
     }
 
-    response: Response = api_client.post(
-        path=SIGNUP_ENDPOINT, data=payload, content_type="application/json"
+    response: Response = client.post(
+        path=SIGNUP_ENDPOINT,
+        data=payload,
+        content_type="application/json",
+        REMOTE_ADDR="192.168.1.1",
     )
 
     assert response.status_code == status.HTTP_201_CREATED
@@ -49,9 +53,8 @@ def test_signup_success(api_client: APIClient) -> None:
 
 
 @pytest.mark.django_db
-def test_signup_duplicate_email(
-    api_client: APIClient, test_user: AbstractBaseUser
-) -> None:
+def test_signup_duplicate_email(test_user: AbstractBaseUser) -> None:
+    client = APIClient()
     payload: Dict[str, str] = {
         "first_name": "John",
         "last_name": "Doe",
@@ -59,8 +62,11 @@ def test_signup_duplicate_email(
         "password": "SecurePassword!123",
     }
 
-    response: Response = api_client.post(
-        path=SIGNUP_ENDPOINT, data=payload, content_type="application/json"
+    response: Response = client.post(
+        path=SIGNUP_ENDPOINT,
+        data=payload,
+        content_type="application/json",
+        REMOTE_ADDR="192.168.1.2",
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -69,16 +75,20 @@ def test_signup_duplicate_email(
 
 
 @pytest.mark.django_db
-def test_signup_short_password(api_client: APIClient) -> None:
+def test_signup_short_password() -> None:
+    client = APIClient()
     payload: Dict[str, str] = {
         "first_name": "John",
         "last_name": "Doe",
-        "email": "test@example.com",
+        "email": "shortpw@example.com",
         "password": "pw",
     }
 
-    response: Response = api_client.post(
-        path=SIGNUP_ENDPOINT, data=payload, content_type="application/json"
+    response: Response = client.post(
+        path=SIGNUP_ENDPOINT,
+        data=payload,
+        content_type="application/json",
+        REMOTE_ADDR="192.168.1.3",
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -87,7 +97,8 @@ def test_signup_short_password(api_client: APIClient) -> None:
 
 
 @pytest.mark.django_db
-def test_signup_email_normalization(api_client: APIClient) -> None:
+def test_signup_email_normalization() -> None:
+    client = APIClient()
     payload: Dict[str, str] = {
         "first_name": "John",
         "last_name": "Doe",
@@ -95,8 +106,11 @@ def test_signup_email_normalization(api_client: APIClient) -> None:
         "password": "SecurePassword!123",
     }
 
-    response: Response = api_client.post(
-        path=SIGNUP_ENDPOINT, data=payload, content_type="application/json"
+    response: Response = client.post(
+        path=SIGNUP_ENDPOINT,
+        data=payload,
+        content_type="application/json",
+        REMOTE_ADDR="192.168.1.4",
     )
 
     assert response.status_code == status.HTTP_201_CREATED
@@ -108,10 +122,9 @@ def test_signup_email_normalization(api_client: APIClient) -> None:
 
 
 @pytest.mark.django_db
-def test_signup_method_not_allowed(
-    api_client: APIClient, test_user: AbstractBaseUser
-) -> None:
-    response: Response = api_client.get(path=SIGNUP_ENDPOINT)
+def test_signup_method_not_allowed(test_user: AbstractBaseUser) -> None:
+    client = APIClient()
+    response: Response = client.get(path=SIGNUP_ENDPOINT, REMOTE_ADDR="192.168.1.5")
 
     assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
 
