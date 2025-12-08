@@ -38,5 +38,19 @@ jobs:
         runs-on: ubuntu-latest
         needs: lint
         steps:
+            - uses: actions/checkout@v4
+
             - name: Setup python
               uses: actions/setup-python@v5
+              with:
+                python-version: '3.12'
+            
+            - name: Docker Compose Build
+              run: |
+                cd services/ &&
+                docker compose build
+            - name: Run Tests
+              run: |
+                cd services/ &&
+                ./test.sh api-gateway
+              
