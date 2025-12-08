@@ -48,7 +48,7 @@ jobs:
             - name: Docker Compose Build
               run: |
                 cd services/ &&
-                docker compose build
+                docker compose -f docker-compose.test.yml build
             - name: Run Tests
               run: |
                 cd services/ &&
