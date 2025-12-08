@@ -6,7 +6,7 @@ set -e
 # --- Configuration ---
 REGISTRY_USER="devyusupov" # Your Docker Hub username
 SERVICE_DIR=$1
-REPO_NAME="$REGISTRY_USER/statushawk/$SERVICE_DIR"
+REPO_NAME="$REGISTRY_USER/statushawk-$SERVICE_DIR"
 
 # Colors
 RED='\033[0;31m'
