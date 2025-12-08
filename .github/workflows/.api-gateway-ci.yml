@@ -66,6 +66,10 @@ jobs:
               with:
                 fetch-depth: 0 # Get full history for semantic parsing
                 
+            - name: Setup Python
+              uses: actions/setup-python@v5
+              with:
+                python-version: '3.12'
             - name: Install Poetry
               uses: snok/install-poetry@v1 
               with:
