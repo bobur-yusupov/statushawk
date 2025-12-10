@@ -31,4 +31,4 @@ EXPOSE 8000
 
 RUN poetry run python app/manage.py collectstatic
 
-CMD ["poetry", "run", "gunicorn", "app.settings.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "4"]
+CMD ["poetry", "run", "gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "4", "--chdir", "/app/app"]
