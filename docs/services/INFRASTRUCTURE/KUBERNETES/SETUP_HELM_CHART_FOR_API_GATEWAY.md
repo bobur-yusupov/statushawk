@@ -9,7 +9,7 @@
 
 ## 1. Summary
 
-A 2-3 sentence "elevator pitch" of the feature. Example: Add the ability for users to receive downtime alerts via a Discord Webhook, not just Email.
+Create a production-ready Helm Chart for the API Gateway service. This standardizes the deployment process, allowing developers to deploy the application to any Kubernetes cluster (Dev/Staging/Prod) using a single command with configurable parameters.
 
 ## 2. Motivation
 
@@ -17,17 +17,19 @@ A 2-3 sentence "elevator pitch" of the feature. Example: Add the ability for use
 
 Why are we doing this? What pain points does the user have?
 
-- Current state: Users miss email alerts because they live in chat apps.
-- Desired state: Critical alerts appear instantly in their team chat.
+- Current state: Developers are not able to deploy API Gateway to K8s cluster.
+- Desired state: A parameterized deployment package where configuration is separated from the manifest logic.
 
 ### 2.2 Goals
 
-- Allow users to paste a Discord Webhook URL.
-- Send a JSON payload when a monitor goes DOWN or UP.
+- **Templating**: Dynamic generation of Kubernetes manifests (Deployment, Service, Ingress, Job).
+- **Configuration**: Control environment variables, resource limits, and replica counts via a simple `values.yaml` file.
+- **Dependency Management**: Automatically handle dependencies like PostgreSQL and Redis if needed for local development.
 
 ### 2.3 Out of Scope (Non-Goals)
 
-- We are not building a Discord Bot (two-way communication), just a one-way webhook.
+- **CI/CD Integration**: This task is only about creating the chart. The automation of `helm upgrade` in GitHub Actions is a separate ticket.
+- **Secret Management**: We will use standard Kubernetes Secrets, not external vaults (like HashiCorp Vault) for this MVP.
 
 ## 3. Detailed Desgin
 
@@ -35,73 +37,89 @@ Why are we doing this? What pain points does the user have?
 
 Describe the UI changes or provide a link to a Figma/Screenshot.
 
-- User navigates to Monitors > [Monitor Name] > Alerting.
-- User sees a new section "Integrations".
-- User selects "Discord" from a dropdown.
-- Input field appears: "Webhook URL".
-- User clicks "Save" (or "Test Integration").
+1. **Build**: CI builds and pushes to Docker Hub through GitHub Actions (CI)
+2. **Configure**: Developer edits `values.yaml` (changes `image.tag` to `v1.2.0`)
+3. **Deploy**: Developer runs:
 
-### 3.2. Database changes
+```bash
+helm upgrade --install api-gateway ./charts/api-gateway -f values.prod.yaml
+```
+
+4. **Verify**: Helm waits for the Pods to become "Ready" before marking the release as successful.
+
+### 3.2. Chart Structure
 
 List new tables, columns, or indexes. Use your Schema Dictionary format.
 
-- **Table**: AlertChannel (Existing)
-- **Column**: type (Enum) -> Add 'DISCORD'
-- **Column**: config (JSONB) -> Store {"url": "..."} here.
+```plaintext
+charts/api-gateway/
+├── Chart.yaml          # Metadata (name, version)
+├── values.yaml         # Default configuration
+├── templates/
+│   ├── deployment.yaml # The main application logic
+│   ├── service.yaml    # Internal networking (ClusterIP)
+│   ├── ingress.yaml    # External access rules (Nginx)
+│   ├── secret.yaml     # Sensitive env vars
+│   └── _helpers.tpl    # Reusable template logic
+```
 
-### 3.3. API Changes
+### 3.3. Key Configuration (values.yaml)
 
 Define the endpoints using the project's JSON standard.
 
-**Endpoint**: `POST /api/v1/integrations/test/`
-
-- Request
-
-```json
-{ 
-    "type": "discord", 
-    "url": "https://discord.com/api/webhooks/..." 
-}
-```
-
-- Response
-
-```json
-{
-    "status": "ok",
-    "data": { "delivered": true }
-}
+```yaml
+replicaCount: 2
+image:
+  repository: devyusupov/statushawk-api-gateway
+  tag: "latest"
+service:
+  type: ClusterIP
+  port: 8000
+ingress:
+  enabled: true
+  hosts:
+    - host: api-gateway.statushawk.internal
+      paths: ["/"]
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+env:
+  DEBUG: "False"
+  DJANGO_SETTINGS_MODULE: "config.settings.production"
 ```
 
 ### 3.4. Logic / Algorithms
 
 Describe how the backend handles the logic.
 
-- Runner Service: When an incident is created, the NotificationTask checks the AlertChannel type.
-- Formatter: If type is DISCORD, format the message using Discord's specific JSON embed structure (color red for down, green for up).
+- **Migration Strategy**: The chart will include a Kubernetes InitContainer or a Pre-Install Hook Job to run `python manage.py migrate` before the new application pods start handling traffic.
+- **Readiness Probes**: The Deployment template will configure a probe hitting `/api/health/` to ensure traffic is only sent to pods that are fully started.
 
 ## 4. Security Considerations
 
-- **Validation**: How do we ensure the user doesn't paste a malicious URL (SSRF attack)?
-    1. Mitigation: The backend must validate the URL host is actually
-- **Permissions**: Can a "Read Only" member add a webhook? (No, must be Admin).
-- **Encryption**: Is the Webhook URL sensitive? (Yes, treat it like a password).
+- **Secrets**: We must not commit actual passwords to `values.yaml`
+    1. *Mitigation*: The `secret.yaml` template will reference values passed in via `--set` flags or from a secure `secrets.yaml` file that is git-ignored (or encrypted via SOPS).
+- **Root Privileges**: The container should run as a non-root user.
+    1. *Implementation*: Set securityContext.runAsUser: 1000 in the deployment template.
+- **Network Policies**: By default, all traffic is allowed. We will restrict Ingress traffic to only come from the Ingress Controller.
 
 ## 5. Edge cases and testing
 
 ### 5.1 Edge cases
 
-- **Rate Limiting**: What if Discord blocks our IP? (We should catch 429 errors and retry with exponential backoff).
-- **Invalid URL**: What if the user deletes the webhook on Discord's side? (We should verify the webhook exists before saving).
-- **Long Messages**: What if the error message is longer than Discord's 2000 char limit? (Truncate it).
+- **Database not ready**:If the API starts before the DB, it crashes.
+    1. *Handling*: Use an `InitContainer` to wait for the DB, or rely on Kubernetes restarting the pod (CrashLoopBackOff) until the DB is up.
+- **Bad Config**: If `ALLOWED_HOSTS` is missing, the app returns 400 errors.
+    1. *Handling*: Validate required values in `_helpers.tpl` using the required function.
 
 ### 5.2 Testing & strategy
 
-- **Unit Tests**: Test the DiscordFormatter class (does it produce valid JSON?).
-- **Integration Tests**: Mock the requests.post call to ensure the pipeline triggers the sender.
-- **Manual Verification**: Create a real Discord channel and spam it with test alerts.
+- **Linting**: Run `helm lint ./charts/api-gateway` in CI to catch syntax errors.
+- **Dry Run**: Run `helm template ./charts/api-gateway` to verify the generated YAML looks correct without deploying it.
+- **Minikube Test**: Deploy the chart to a local cluster and verify `kubectl get pods` shows status `Running`.
 
 ## 6. Deployment / Rollout
 
-- **Migrations**: Requires a DB migration for the new Enum value.
-- **Feature Flag**: Is this behind a flag? `ENABLE_DISCORD_INTEGRATION = True`
+- **Versioning**: The `Chart.yaml` version will be bumped (e.g., `0.1.0` -> `0.1.1`) whenever the templates change.
+- **Repo**: For now, the chart will live in the `/charts` directory of the monorepo. In the future, we can publish to a GitHub Pages Helm Repository.
