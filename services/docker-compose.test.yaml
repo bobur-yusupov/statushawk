@@ -13,7 +13,7 @@ services:
       - DB_PASSWORD=password
       - DB_HOST=auth-db
       - DB_PORT=5432
-      - DB_ENGINE="django.db.backends.postgresql"
+      - DB_ENGINE=django.db.backends.postgresql
       - DJANGO_SECRET_KEY=django-insecure-^jihrnki)62kxf_9m$qv+kt0@ea927lb#%v*ci5&(bybfb^2@m
     volumes:
       - ./api-gateway/app:/app/app
