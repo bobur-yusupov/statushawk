@@ -1,0 +1,69 @@
+replicaCount: 1
+image:
+  repository: devyusupov/statushawk-api-gateway
+  pullPolicy: IfNotPresent
+  tag: "0.2.0"
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+  automount: true
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations: {}
+  hosts:
+    - host: api-gateway.statushawk.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+httpRoute:
+  # HTTPRoute enabled.
+  enabled: false
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 512Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+dependencies:
+  postgres:
+    enabled: true
+    auth:
+      username: hawk_user
+      password: StatusHawk
+      database: main
+    primary:
+      persistence:
+        enabled: false
+
+env:
+  djangoSecretKey: "unsafe-default-change-me"
+  debug: "True"
+  allowedHosts: "*"
+
+volumes: []
+volumeMounts: []
+nodeSelector: {}
+tolerations: []
+affinity: {}
