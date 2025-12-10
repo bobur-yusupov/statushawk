@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: {{ .Release.Name }}-postgresql
+    labels:
+        app: postgres
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: postgres
+    template:
+        metadata:
+            labels:
+                app: postgres
+        spec:
+            containers:
+                - name: postgres
+                  image: postgres:15-alpine
+                  ports:
+                    - containerPort: 5432
+                  env:
+                    - name: POSTGRES_DB
+                      value: {{ .Values.dependencies.postgres.auth.database }}
+                    - name: POSTGRES_USER
+                      value: {{ .Values.dependencies.postgres.auth.username }}
+                    - name: POSTGRES_PASSWORD
+                      value: {{ .Values.dependencies.postgres.auth.password }}
+
+                    
