@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+    name: {{ include "api-gateway.fullname" . }}-migration
+    labels:
+        {{- include "api-gateway.labels" . | nindent 4 }}
+    annotations:
+        "helm.sh/hood": pre-install, pre-upgrade
+        "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
+        "helm.sh/hook-weight": "-5"
+spec:
+    template:
+        metadata:
+            name: {{ include "api-gateway.fullname" . }}-migration
+        spec:
+            restartPolicy: Never
+            containers:
+                - name: db-migration
+                  image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+                  imagePullPolicy: {{ .Values.image.pullPolicy }}
+                  command: ["python", "app/manage.py", "migrate", "--noinput"]
+                  env:
+                    - name: DJANGO_SECRET_KEY
+                      value: {{ .Values.env.djangoSecretKey | default "unsafe-dev-key" }}
+                    - name: DB_ENGINE
+                      value: "django.db.backends.postgresql"
+                    - name: DB_HOST
+                      value: {{ .Release.Name }}-postgresql
+                    - name: DB_PORT
+                      value: "5432"
+                    - name: DB_NAME
+                      value: {{ .Values.dependencies.postgres.auth.database }}
+                    - name: DB_USER
+                      value: {{ .Values.dependencies.postgres.auth.username }}
+                    - name: DB_PASSWORD
+                      value: {{ .Values.dependencies.postgres.auth.password }}
