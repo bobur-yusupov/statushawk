@@ -2,9 +2,9 @@
 
 |Metadata|Details|
 |--------|-------|
-|Status|Draft|
+|Status|Approved|
 |Author|@bobur-yusupov|
-|Created|2025-12-08"|
+|Created|2025-12-10"|
 |Issue|#16|
 
 ## 1. Summary
