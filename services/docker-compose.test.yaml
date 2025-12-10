@@ -8,10 +8,12 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - POSTGRES_DB=authdb
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_HOST=auth-db
+      - DB_NAME=authdb
+      - DB_USER=user
+      - DB_PASSWORD=password
+      - DB_HOST=auth-db
+      - DB_PORT=5432
+      - DB_ENGINE=django.db.backends.postgresql
       - DJANGO_SECRET_KEY=django-insecure-^jihrnki)62kxf_9m$qv+kt0@ea927lb#%v*ci5&(bybfb^2@m
     volumes:
       - ./api-gateway/app:/app/app
