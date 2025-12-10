@@ -22,7 +22,7 @@ RUN curl -sSL https://install.python-poetry.org | python3 - && \
 COPY pyproject.toml poetry.lock* poetry.toml /app/
 
 # Install dependencies (will use system Python due to poetry.toml)
-RUN poetry install --only main
+RUN poetry install --no-root
 
 # Copy application code
 COPY ./app /app/app
