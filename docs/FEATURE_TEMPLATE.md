@@ -17,8 +17,8 @@ A 2-3 sentence "elevator pitch" of the feature. Example: Add the ability for use
 
 Why are we doing this? What pain points does the user have?
 
-- Current state: Users miss email alerts because they live in chat apps.
-- Desired state: Critical alerts appear instantly in their team chat.
+- **Current state**: Users miss email alerts because they live in chat apps.
+- **Desired state**: Critical alerts appear instantly in their team chat.
 
 ### 2.2 Goals
 
