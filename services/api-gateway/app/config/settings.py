@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "accounts",
     "common",
+    "monitor",
 ]
 
 MIDDLEWARE = [
@@ -147,3 +148,10 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
 }
+
+
+
+# ---------------------------------------------------
+# Services
+# ---------------------------------------------------
+RUNNER_SERVICE_URL = os.environ.get("RUNNER_SERVICE_URL")

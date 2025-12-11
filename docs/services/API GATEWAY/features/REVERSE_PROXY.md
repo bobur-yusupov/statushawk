@@ -1,4 +1,4 @@
-# API Gateway Reverse Proxy
+# API Gateway Reverse Proxy to Runner Service
 
 |Metadata|Details|
 |--------|-------|
