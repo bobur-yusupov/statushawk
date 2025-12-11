@@ -115,7 +115,8 @@ jobs:
                 
                 git add pyproject.toml poetry.lock
                 # [skip ci] prevents the push from triggering the entire workflow in an infinite loop
-                git commit -m "ci: bump version to $NEW_VERSION [skip ci]"
+                git commit -m "ci: bump version to $NEW_VERSION API Gateway [skip ci]"
+                git pull --rebase origin main
                 git push
 
     build-and-push:

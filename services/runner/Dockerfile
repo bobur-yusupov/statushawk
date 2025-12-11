@@ -1,0 +1,34 @@
+FROM python:3.12-slim
+
+ENV PYTHONUNBUFFERED=1
+ENV POETRY_VERSION=2.2.1
+ENV POETRY_HOME=/opt/poetry
+ENV POETRY_NO_INTERACTION=1
+ENV PATH="$POETRY_HOME/bin:$PATH"
+
+LABEL maintainer="github/bobur-yusupov"
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Poetry
+RUN curl -sSL https://install.python-poetry.org | python3 - && \
+    ln -s /root/.local/bin/poetry /usr/local/bin/poetry
+
+COPY pyproject.toml poetry.lock* poetry.toml /app/
+
+# Install dependencies (will use system Python due to poetry.toml)
+RUN poetry install --no-root
+
+# Copy application code
+COPY ./app /app/app
+
+EXPOSE 8000
+
+RUN poetry run python app/manage.py collectstatic
+
+CMD ["poetry", "run", "gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "4", "--chdir", "/app/app"]
