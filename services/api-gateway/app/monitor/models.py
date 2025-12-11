@@ -1,9 +1,11 @@
+from typing import Any
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator, URLValidator
 from django.utils.translation import gettext_lazy as _
 
 User = get_user_model()
+
 
 class Monitor(models.Model):
     class MonitorType(models.TextChoices):
@@ -32,13 +34,13 @@ class Monitor(models.Model):
         indexes = [
             models.Index(fields=["user", "is_active"]),
         ]
-    
-    def __str__(self):
+
+    def __str__(self) -> str:
         return f"{self.name} ({self.url})"
-    
-    def save(self, *args, **kwargs):
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
         super().save(*args, **kwargs)
         self._trigger_sync()
-    
-    def _trigger_sync():
+
+    def _trigger_sync(self) -> None:
         pass
