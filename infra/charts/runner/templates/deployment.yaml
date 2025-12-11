@@ -40,6 +40,31 @@ spec:
           {{- end }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          
+          env:
+            # Standard Django Config
+            - name: DJANGO_SECRET_KEY
+              value: {{ .Values.env.djangoSecretKey | default "unsafe-dev-key" }}
+            - name: DEBUG
+              value: {{ .Values.env.debug | default "False" | quote }}
+            - name: ALLOWED_HOSTS
+              value: {{ .Values.env.allowedHosts | default "*" | quote }}
+
+            # Database
+            - name: DB_ENGINE
+              value: "django.db.backends.postgresql"
+            - name: DB_HOST
+              value: {{ .Values.postgres.host | default (printf "%s-postgresql" .Release.Name) }}
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: {{ .Values.postgres.auth.database }}
+            - name: DB_USER
+              value: {{ .Values.postgres.auth.username }}
+            - name: DB_PASSWORD
+              value: {{ .Values.postgres.auth.password }}
+
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}

@@ -59,11 +59,11 @@ spec:
             - name: DB_PORT
               value: "5432"
             - name: DB_NAME
-              value: {{ .Values.dependencies.postgres.auth.database }}
+              value: {{ .Values.postgres.auth.database }}
             - name: DB_USER
-              value: {{ .Values.dependencies.postgres.auth.username }}
+              value: {{ .Values.postgres.auth.username }}
             - name: DB_PASSWORD
-              value: {{ .Values.dependencies.postgres.auth.password }}
+              value: {{ .Values.postgres.auth.password }}
 
           ports:
             - name: http

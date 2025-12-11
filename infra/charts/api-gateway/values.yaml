@@ -2,7 +2,7 @@ replicaCount: 1
 image:
   repository: devyusupov/statushawk-api-gateway
   pullPolicy: IfNotPresent
-  tag: "0.3.3"
+  tag: "0.4.1"
 
 service:
   type: ClusterIP
@@ -40,22 +40,21 @@ resources:
 
 # This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
 autoscaling:
-  enabled: true
+  enabled: false
   minReplicas: 1
   maxReplicas: 5
   targetCPUUtilizationPercentage: 80
   targetMemoryUtilizationPercentage: 80
 
-dependencies:
-  postgres:
-    enabled: true
-    auth:
-      username: hawk_user
-      password: StatusHawk
-      database: main
-    primary:
-      persistence:
-        enabled: false
+postgres:
+  enabled: true
+  auth:
+    username: hawk_user
+    password: StatusHawk
+    database: main
+  primary:
+    persistence:
+      enabled: false
 
 env:
   djangoSecretKey: "unsafe-default-change-me"
