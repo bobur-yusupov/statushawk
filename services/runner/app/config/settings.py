@@ -1,3 +1,4 @@
+from typing import List
 from pathlib import Path
 import os
 
@@ -9,7 +10,7 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-1")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS: List[str] = []
 
 
 # Application definition
