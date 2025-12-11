@@ -6,6 +6,7 @@ ENV POETRY_HOME=/opt/poetry
 ENV POETRY_NO_INTERACTION=1
 ENV PATH="$POETRY_HOME/bin:$PATH"
 
+
 LABEL maintainer="github/bobur-yusupov"
 
 WORKDIR /app
