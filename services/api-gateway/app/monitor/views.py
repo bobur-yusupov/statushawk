@@ -21,6 +21,7 @@ class MonitorCheckProxyView(APIView):
         # 1. AUTHORIZATION (Gateway DB)
         # We verify ownership using the Gateway's local Monitor table.
         # This prevents BOLA (Broken Object Level Authorization).
+        # Use get_object_or_404
         monitor = get_object_or_404(Monitor, id=monitor_id, user=request.user)
 
         # 2. CONSTRUCT INTERNAL REQUEST
