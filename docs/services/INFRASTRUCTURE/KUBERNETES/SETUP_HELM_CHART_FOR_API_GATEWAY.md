@@ -2,7 +2,7 @@
 
 |Metadata|Details|
 |--------|-------|
-|Status|Approved|
+|Status|Implemented|
 |Author|@bobur-yusupov|
 |Created|2025-12-10"|
 |Issue|#16|
