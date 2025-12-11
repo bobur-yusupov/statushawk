@@ -33,6 +33,11 @@ jobs:
               run: |
                 cd services/api-gateway &&
                 poetry run flake8 .
+            
+            - name: Run MyPy
+              run: |
+                cd services/api-gateway &&
+                poetry run mypy .
     
     test:
         runs-on: ubuntu-latest
