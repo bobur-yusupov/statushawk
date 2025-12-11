@@ -2,7 +2,7 @@ replicaCount: 1
 image:
   repository: devyusupov/statushawk-runner
   pullPolicy: IfNotPresent
-  tag: "0.2.2"
+  tag: "0.2.3"
 
 service:
   type: ClusterIP

@@ -57,7 +57,7 @@ spec:
             - name: DB_HOST
               value: {{ .Values.postgres.host | default (printf "%s-postgresql" .Release.Name) }}
             - name: DB_PORT
-              value: "5432"
+              value: "5433"
             - name: DB_NAME
               value: {{ .Values.postgres.auth.database }}
             - name: DB_USER

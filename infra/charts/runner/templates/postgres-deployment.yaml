@@ -6,6 +6,8 @@ metadata:
         app: {{ .Release.Name }}-postgres
 spec:
     replicas: 1
+    strategy:
+      type: Recreate
     selector:
         matchLabels:
             app: {{ .Release.Name }}-postgres
@@ -18,7 +20,7 @@ spec:
                 - name: postgres
                   image: postgres:15-alpine
                   ports:
-                    - containerPort: 5433
+                    - containerPort: 5432
                   env:
                     - name: POSTGRES_DB
                       value: {{ .Values.postgres.auth.database }}
@@ -27,4 +29,11 @@ spec:
                     - name: POSTGRES_PASSWORD
                       value: {{ .Values.postgres.auth.password }}
 
-                    
+                  volumeMounts:
+                    - name: postgres-storage
+                      mountPath: /var/lib/postgresql/data
+            
+            volumes:
+              - name: postgres-storage
+                persistentVolumeClaim:
+                  claimName: {{ .Release.Name }}-postgres-pvc
