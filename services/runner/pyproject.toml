@@ -1,6 +1,6 @@
 [project]
 name = "runner"
-version = "0.2.3"
+version = "0.3.0"
 description = "Runner Service"
 authors = [
     {name = "Bobur Yusupov",email = "yusufi.bobur@gmail.com"}
