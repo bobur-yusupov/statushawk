@@ -10,6 +10,7 @@ from rest_framework import status, permissions, views, authentication
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from common.utils import generate_timestamp_iso
+from utils.logger import log_info, log_warning
 from .serializers import UserSerializer, LoginSerializer
 
 
@@ -38,9 +39,16 @@ class SignUpView(CreateAPIView):
     def http_method_not_allowed(
         self, request: HttpRequest, *args: Any, **kwargs: Any
     ) -> Response:
+        log_warning(
+            "Method not allowed on SignUp",
+            method=request.method,
+            ip=request.META.get("REMOTE_ADDR"),
+        )
+
         return Response(
             data={
                 "status": "error",
+                "timestamp": generate_timestamp_iso(),
                 "data": {
                     "message": "Method not allowed.",
                 },
@@ -49,10 +57,15 @@ class SignUpView(CreateAPIView):
         )
 
     def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        email = request.data.get("email")
+        log_info("New signup attempt", email=email)
+
         serializer = self.get_serializer(data=request.data)
 
         if serializer.is_valid():
-            serializer.save()
+            user = serializer.save()
+
+            log_info("User registered successfully", user_id=user.id, email=email)
 
             return Response(
                 data={
@@ -62,6 +75,8 @@ class SignUpView(CreateAPIView):
                 },
                 status=status.HTTP_201_CREATED,
             )
+
+        log_warning("Signup validation failed", email=email, errors=serializer.errors)
 
         return Response(
             data={
@@ -81,9 +96,18 @@ class LoginView(ObtainAuthToken):
     serializer_class: Type[Serializer] = LoginSerializer
 
     def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        email_attempt = request.data.get("email")
+        log_info("New login attempt", email=email_attempt)
+
         serializer = self.get_serializer(data=request.data)
 
         if not serializer.is_valid():
+            log_warning(
+                "Login failed: Invalid credentials",
+                email=email_attempt,
+                errors=serializer.errors,
+            )
+
             return Response(
                 data={
                     "status": "error",
@@ -96,6 +120,9 @@ class LoginView(ObtainAuthToken):
 
         user = serializer.validated_data["user"]
         token, created = Token.objects.get_or_create(user=user)
+
+        log_info("User logged in successfully", user_id=user.id, email=email_attempt)
+
         response_data: Dict[str, Any] = {
             "status": "ok",
             "timestamp": generate_timestamp_iso(),
@@ -112,6 +139,9 @@ class LogoutView(views.APIView):
     def post(self, request: Request) -> Response:
         if request.auth:
             request.auth.delete()
+
+        log_info("User logged out successfully", user_id=request.user.id)
+
         message = "Successfully logged out."
         return Response(
             data={
