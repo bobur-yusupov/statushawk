@@ -95,7 +95,7 @@ Describe how the backend handles the logic.
 - **Invalid URL**: What if the user deletes the webhook on Discord's side? (We should verify the webhook exists before saving).
 - **Long Messages**: What if the error message is longer than Discord's 2000 char limit? (Truncate it).
 
-### 5.2 Testing & strategy
+### 5.2 Testing Strategy
 
 - **Unit Tests**: Test the DiscordFormatter class (does it produce valid JSON?).
 - **Integration Tests**: Mock the requests.post call to ensure the pipeline triggers the sender.
