@@ -5,14 +5,10 @@ from django.urls import path, include, URLPattern, URLResolver
 
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
-def trigger_error(request):
-    division_by_zero = 1 / 0
-
 urlpatterns: List[Union[URLPattern, URLResolver]] = [
     path("admin/", admin.site.urls),
     path("api/v1/accounts/", include("accounts.urls")),
     path("api/v1/monitors/", include("monitor.urls")),
-    path('sentry-debug/', trigger_error),
 ]
 
 if settings.DEBUG:

@@ -1,5 +1,8 @@
 from pathlib import Path
 import os
+import sys
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -120,3 +123,60 @@ REST_FRAMEWORK = {
 # Services
 # ---------------------------------------------------
 RUNNER_SERVICE_URL = os.environ.get("RUNNER_SERVICE_URL")
+
+
+# ---------------------------------------------------
+# Logging
+# ---------------------------------------------------
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{'
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'stream': sys.stdout,
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    }
+}
+
+#  ---------------------------------------------------
+# Sentry
+# ---------------------------------------------------
+
+SENTRY_DSN = os.environ.get("SENTRY_DSN", None)
+
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[
+            DjangoIntegration(),
+        ],
+        
+        environment=os.environ.get("SENTRY_ENVIRONMENT", "local"),
+        release=os.environ.get("SENTRY_RELEASE", "unknown"),
+        traces_sample_rate=float(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", 1.0)),
+        send_default_pii=True,
+    )
