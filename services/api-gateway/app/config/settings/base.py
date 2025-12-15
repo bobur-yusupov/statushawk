@@ -129,37 +129,34 @@ RUNNER_SERVICE_URL = os.environ.get("RUNNER_SERVICE_URL")
 # Logging
 # ---------------------------------------------------
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {message}',
-            'style': '{',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {message}",
+            "style": "{",
         },
-        'simple': {
-            'format': '{levelname} {message}',
-            'style': '{'
+        "simple": {"format": "{levelname} {message}", "style": "{"},
+    },
+    "handlers": {
+        "console": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "stream": sys.stdout,
+            "formatter": "verbose",
         },
     },
-    'handlers': {
-        'console': {
-            'level': 'INFO',
-            'class': 'logging.StreamHandler',
-            'stream': sys.stdout,
-            'formatter': 'verbose',
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
         },
     },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO',
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-    }
 }
 
 #  ---------------------------------------------------
@@ -174,7 +171,6 @@ if SENTRY_DSN:
         integrations=[
             DjangoIntegration(),
         ],
-        
         environment=os.environ.get("SENTRY_ENVIRONMENT", "local"),
         release=os.environ.get("SENTRY_RELEASE", "unknown"),
         traces_sample_rate=float(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", 1.0)),

@@ -39,7 +39,11 @@ class SignUpView(CreateAPIView):
     def http_method_not_allowed(
         self, request: HttpRequest, *args: Any, **kwargs: Any
     ) -> Response:
-        log_warning(f"Method not allowed on SignUp", method=request.method, ip=request.META.get('REMOTE_ADDR'))
+        log_warning(
+            "Method not allowed on SignUp",
+            method=request.method,
+            ip=request.META.get("REMOTE_ADDR"),
+        )
 
         return Response(
             data={
@@ -55,7 +59,7 @@ class SignUpView(CreateAPIView):
     def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         email = request.data.get("email")
         log_info("New signup attempt", email=email)
-        
+
         serializer = self.get_serializer(data=request.data)
 
         if serializer.is_valid():
@@ -72,7 +76,7 @@ class SignUpView(CreateAPIView):
                 status=status.HTTP_201_CREATED,
             )
 
-        log_warning("Signup validation failed", email=email, errors=serializer.errors)            
+        log_warning("Signup validation failed", email=email, errors=serializer.errors)
 
         return Response(
             data={
@@ -94,11 +98,15 @@ class LoginView(ObtainAuthToken):
     def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         email_attempt = request.data.get("email")
         log_info("New login attempt", email=email_attempt)
-        
+
         serializer = self.get_serializer(data=request.data)
 
         if not serializer.is_valid():
-            log_warning("Login failed: Invalid credentials", email=email_attempt, errors=serializer.errors)
+            log_warning(
+                "Login failed: Invalid credentials",
+                email=email_attempt,
+                errors=serializer.errors,
+            )
 
             return Response(
                 data={
@@ -133,7 +141,7 @@ class LogoutView(views.APIView):
             request.auth.delete()
 
         log_info("User logged out successfully", user_id=request.user.id)
-        
+
         message = "Successfully logged out."
         return Response(
             data={
