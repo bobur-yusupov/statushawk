@@ -9,22 +9,29 @@ User = get_user_model()
 
 class Monitor(models.Model):
     class MonitorType(models.TextChoices):
-        HTTP = "THTP", _("HTTP(s)")
+        HTTP = "HTTP", _("HTTP(s)")
         PING = "PING", _("PING")
         TCP = "TCP", _("TCP")
 
+    class StatusType(models.TextChoices):
+        UP = "UP", _("UP")
+        DOWN = "DOWN", _("DOWN")
+        PAUSED = "PAUSED", _("PAUSED")
+
+    id = models.AutoField(primary_key=True, unique=True, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="monitors")
     name = models.CharField(max_length=255)
-    url = models.URLField(validators=[URLValidator()])
+    url = models.URLField(validators=[URLValidator()], max_length=2048)
     monitor_type = models.CharField(max_length=10, choices=MonitorType.choices)
+    status = models.CharField(
+        max_length=10, choices=StatusType.choices, default=StatusType.PAUSED
+    )
 
     interval = models.PositiveIntegerField(
-        default=60, validators=[MinValueValidator(30)]
+        default=300, validators=[MinValueValidator(30)]
     )
     is_active = models.BooleanField(default=True)
-    timeout = models.PositiveIntegerField(default=10, help_text="Timeout in seconds")
-
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
