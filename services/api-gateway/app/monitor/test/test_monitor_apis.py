@@ -32,7 +32,9 @@ def authenticated_client(api_client: APIClient, user: Any) -> APIClient:
 @pytest.mark.django_db
 class TestMonitorAPI:
 
-    def test_post_valid_data_returns_201(self, authenticated_client: APIClient, user: Any) -> None:
+    def test_post_valid_data_returns_201(
+        self, authenticated_client: APIClient, user: Any
+    ) -> None:
         data = {
             "name": "Test Monitor",
             "url": "https://example.com",
@@ -46,7 +48,9 @@ class TestMonitorAPI:
         assert response.data["url"] == "https://example.com"
         assert Monitor.objects.filter(user=user).count() == 1
 
-    def test_post_interval_too_low_returns_400(self, authenticated_client: APIClient) -> None:
+    def test_post_interval_too_low_returns_400(
+        self, authenticated_client: APIClient
+    ) -> None:
         data = {
             "name": "Test Monitor",
             "url": "https://example.com",
@@ -58,7 +62,9 @@ class TestMonitorAPI:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "interval" in response.data
 
-    def test_get_sees_only_own_monitors(self, authenticated_client: APIClient, user: Any, other_user: Any) -> None:
+    def test_get_sees_only_own_monitors(
+        self, authenticated_client: APIClient, user: Any, other_user: Any
+    ) -> None:
         Monitor.objects.create(
             user=user, name="My Monitor", url="https://mine.com", monitor_type="HTTP"
         )
@@ -75,7 +81,9 @@ class TestMonitorAPI:
         assert response.data["count"] == 1
         assert response.data["results"][0]["name"] == "My Monitor"
 
-    def test_delete_removes_record(self, authenticated_client: APIClient, user: Any) -> None:
+    def test_delete_removes_record(
+        self, authenticated_client: APIClient, user: Any
+    ) -> None:
         monitor = Monitor.objects.create(
             user=user,
             name="Test Monitor",
@@ -92,7 +100,9 @@ class TestMonitorAPI:
         response = api_client.get("/api/v1/monitors/")
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    def test_cannot_delete_other_users_monitor(self, authenticated_client: APIClient, other_user: Any) -> None:
+    def test_cannot_delete_other_users_monitor(
+        self, authenticated_client: APIClient, other_user: Any
+    ) -> None:
         monitor = Monitor.objects.create(
             user=other_user,
             name="Other Monitor",
@@ -119,7 +129,9 @@ class TestMonitorAPI:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_cannot_update_other_users_monitor(self, authenticated_client: APIClient, other_user: Any) -> None:
+    def test_cannot_update_other_users_monitor(
+        self, authenticated_client: APIClient, other_user: Any
+    ) -> None:
         monitor = Monitor.objects.create(
             user=other_user,
             name="Other Monitor",
