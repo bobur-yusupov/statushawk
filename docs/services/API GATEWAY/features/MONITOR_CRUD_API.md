@@ -2,7 +2,7 @@
 
 |Metadata|Details|
 |--------|-------|
-|Status|Draft|
+|Status|Approved|
 |Author|@bobur-yusupov|
 |Created|2026-01-10"|
 |Issue|#31|
@@ -38,7 +38,7 @@ Why are we doing this? What pain points does the user have?
 List new tables, columns, or indexes. Use your Schema Dictionary format.
 
 - **Table**: monitors (Monitor model)
-- **Column**: id (UUID) -> PK, default -> Unique ID
+- **Column**: id (AutoField) -> PK, default -> Unique ID
 - **Column**: user -> FK to User model -> Owner of the monitor
 - **Column**: name (String, max 255) -> Friendly name (e.g. "Landing Page")
 - **Column**: url (URLField, max 2048) -> The target to ping

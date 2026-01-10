@@ -2,11 +2,32 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, mixins
+from rest_framework.viewsets import GenericViewSet
+from rest_framework.pagination import PageNumberPagination
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 import httpx
 from .models import Monitor
+from .serializers import MonitorSerializer
+
+
+class MonitorPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = "size"
+    max_page_size = 100
+
+
+class MonitorView(GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
+    serializer_class = MonitorSerializer
+    pagination_class = MonitorPagination
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Monitor.objects.filter(user=self.request.user)
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 
 class MonitorCheckProxyView(APIView):
