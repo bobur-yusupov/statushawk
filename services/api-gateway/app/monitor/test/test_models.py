@@ -24,7 +24,7 @@ def test_create_monitor(user):
     assert monitor.url == "https://example.com"
     assert monitor.monitor_type == Monitor.MonitorType.HTTP
     assert monitor.status == Monitor.StatusType.PAUSED
-    assert monitor.interval == 60
+    assert monitor.interval == 300
     assert monitor.is_active is True
 
 
@@ -50,7 +50,7 @@ def test_monitor_default_values(user):
     )
     
     assert monitor.status == Monitor.StatusType.PAUSED
-    assert monitor.interval == 60
+    assert monitor.interval == 300
     assert monitor.is_active is True
 
 
