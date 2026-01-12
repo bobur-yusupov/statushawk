@@ -19,6 +19,7 @@ INSTALLED_APPS = [
     "accounts",
     "common",
     "monitor",
+    "django_celery_results",
 ]
 
 MIDDLEWARE = [
@@ -176,3 +177,16 @@ if SENTRY_DSN:
         traces_sample_rate=float(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", 1.0)),
         send_default_pii=True,
     )
+
+
+# ---------------------------------------------------
+# Celery
+# ---------------------------------------------------
+
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
+CELERY_RESULTS_BACKEND = "django-db"
+
+CELERY_TASK_ROUTES = {
+    "monitor.tasks.check_monitor_task": {"queue": "runner_queue"},
+    "*": {"queue": "celery"},
+}
