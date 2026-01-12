@@ -1,0 +1,90 @@
+nameOverride: ""
+fullnameOverride: ""
+
+replicaCount: 1
+
+# This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
+image:
+  repository: devyusupov/statushawk-api-gateway
+  pullPolicy: IfNotPresent
+  tag: "0.8.0"
+
+# This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+imagePullSecrets: []
+
+env:
+  USE_DOCKER: "yes"
+  DJANGO_SETTINGS_MODULE: "config.settings.local"
+
+# --------------------
+# API GATEWAY (HTTP)
+# --------------------
+
+api:
+  enabled: true
+  replicaCount: 2
+
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 8000
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  
+  livenessProbe:
+    path: /health/
+    initialDelaySeconds: 30
+  readinessProbe:
+    path: /health/
+    initialDelaySeconds: 5
+
+
+# --------------------
+# RUNNER SERVICE (Background Worker)
+# --------------------
+runner:
+  enabled: true
+  replicaCount: 1
+
+  concurrency: 20
+  loglevel: "info"
+
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 200m
+      memory: 512Mi
+
+
+# ----------------------
+# DATABASE
+# ----------------------
+postgresql:
+  enabled: true
+  image:
+    tag: "17-alpine"
+  auth:
+    postgresPassword: "password"
+    database: "db"
+  primary:
+    persistence:
+      enabled: false
+
+
+# -------------------------
+# BROKER (Redis)
+# -------------------------
+redis:
+  enabled: true
+  image:
+    tag: "7.2-alpine"
+  auth:
+    enabled: false
