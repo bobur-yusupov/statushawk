@@ -63,7 +63,7 @@ class Monitor(models.Model):
 
             transaction.on_commit(
                 lambda: check_monitor_task.apply_async(
-                    kwargs={"monitor_id": self.pk},
+                    args=[self.pk],
                     queue="runner_queue",
                 )
             )

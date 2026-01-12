@@ -6,7 +6,7 @@ from .models import Monitor, MonitorResult
 
 
 @shared_task(name="monitor.tasks.check_monitor_task", bind=True)
-def check_monitor_task(monitor_id: int) -> str:
+def check_monitor_task(self, monitor_id: int) -> str:
     try:
         monitor = Monitor.objects.only("url", "interval", "is_active").get(
             id=monitor_id
