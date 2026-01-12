@@ -24,7 +24,7 @@ spec:
         - name: api
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["gunicorn", "config.wsgi:application", "-b", "0.0.0.0:8000"]
+          command: ["python", "app/manage.py", "runserver", "0.0.0.0:8000"]
           ports:
             - name: http
               containerPort: 8000

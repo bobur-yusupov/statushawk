@@ -7,7 +7,7 @@ replicaCount: 1
 image:
   repository: devyusupov/statushawk-api-gateway
   pullPolicy: IfNotPresent
-  tag: "0.8.0"
+  tag: "0.9.0"
 
 # This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
@@ -15,6 +15,7 @@ imagePullSecrets: []
 env:
   USE_DOCKER: "yes"
   DJANGO_SETTINGS_MODULE: "config.settings.local"
+  DB_ENGINE: "django.db.backends.postgresql"
 
 # --------------------
 # API GATEWAY (HTTP)
@@ -88,3 +89,12 @@ redis:
     tag: "7.2-alpine"
   auth:
     enabled: false
+
+
+# ------------------------
+# Admin User
+# ------------------------
+superuser:
+  enabled: true
+  email: "admin@statushawk.com"
+  password: "admin_password_123"
