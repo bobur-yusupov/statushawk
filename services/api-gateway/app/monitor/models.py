@@ -55,19 +55,19 @@ class Monitor(models.Model):
                 was_active = old_instance.is_active
             except Monitor.DoesNotExist:
                 pass
-        
+
         super().save(*args, **kwargs)
 
         if self.is_active and (is_new or not was_active):
             from monitor.tasks import check_monitor_task
-            
+
             transaction.on_commit(
                 lambda: check_monitor_task.apply_async(
-                    kwargs={'monitor_id': self.pk},
-                    queue='runner_queue',
+                    kwargs={"monitor_id": self.pk},
+                    queue="runner_queue",
                 )
             )
-        
+
 
 class MonitorResult(models.Model):
     id = models.AutoField(primary_key=True, unique=True, editable=False)

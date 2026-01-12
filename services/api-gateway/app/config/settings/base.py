@@ -188,5 +188,5 @@ CELERY_RESULTS_BACKEND = "django-db"
 
 CELERY_TASK_ROUTES = {
     "monitor.tasks.check_monitor_task": {"queue": "runner_queue"},
-    "*": {"queue": "celery"}
+    "*": {"queue": "celery"},
 }

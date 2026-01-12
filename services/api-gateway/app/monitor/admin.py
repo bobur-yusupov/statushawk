@@ -57,4 +57,3 @@ class MonitorResultAdmin(admin.ModelAdmin):
     search_fields = ("monitor__name",)
     readonly_fields = ("checked_at", "created_at")
     date_hierarchy = "checked_at"
-
