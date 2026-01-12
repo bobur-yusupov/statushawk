@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.utils.safestring import SafeString
-from .models import Monitor
+from .models import Monitor, MonitorResult
 
 
 @admin.register(Monitor)
@@ -48,3 +48,13 @@ class MonitorAdmin(admin.ModelAdmin):
         )
 
     status_badge.short_description = "Status"  # type: ignore[attr-defined]
+
+
+@admin.register(MonitorResult)
+class MonitorResultAdmin(admin.ModelAdmin):
+    list_display = ("monitor", "is_up", "status_code", "response_time_ms", "checked_at")
+    list_filter = ("is_up", "checked_at")
+    search_fields = ("monitor__name",)
+    readonly_fields = ("checked_at", "created_at")
+    date_hierarchy = "checked_at"
+
