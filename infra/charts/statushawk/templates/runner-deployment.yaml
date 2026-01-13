@@ -41,7 +41,8 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "statushawk.fullname" . }}-config
-            # - secretRef: (Add your DB secrets here)
+            - secretRef:
+                name: {{ include "statushawk.fullname" . }}-secrets
           
           # Health Check: Simple liveness check for Celery
           # (Advanced: use celery inspect ping, but this is simpler)
