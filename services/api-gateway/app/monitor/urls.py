@@ -7,6 +7,6 @@ router = DefaultRouter()
 router.register("", MonitorView, basename="monitor")
 
 urlpatterns = [
-    path("<int:id>/checks/", MonitorCheckProxyView.as_view(), name="monitor-checks"),
     path("", include(router.urls)),
+    path("<int:id>/checks/", MonitorCheckProxyView.as_view(), name="monitor-checks"),
 ]
