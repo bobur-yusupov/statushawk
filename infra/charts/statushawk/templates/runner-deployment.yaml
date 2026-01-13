@@ -25,8 +25,6 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           
-          # 🚀 COMMAND: Run the Worker
-          # We use the gevent pool for high concurrency network tasks
           command: 
             - celery
             - -A
