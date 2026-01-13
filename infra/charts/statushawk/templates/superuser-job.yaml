@@ -1,0 +1,49 @@
+{{- if .Values.superuser.enabled -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "statushawk.fullname" . }}-superuser
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      imagePullSecrets:
+        {{- toYaml .Values.imagePullSecrets | nindent 8 }}
+      containers:
+        - name: superuser
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          
+          envFrom:
+            - configMapRef:
+                name: {{ include "statushawk.fullname" . }}-config
+            - secretRef:
+                name: {{ include "statushawk.fullname" . }}-secrets
+
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              python app/manage.py shell -c "
+              from django.contrib.auth import get_user_model
+              
+              User = get_user_model()
+              email = '{{ .Values.superuser.email }}'
+              password = '{{ .Values.superuser.password }}'
+              
+              if not User.objects.filter(email=email).exists():
+                  print(f'Creating superuser {email}...')
+                  User.objects.create_superuser(email, password=password)
+              else:
+                  print(f'User {email} exists. Updating password...')
+                  u = User.objects.get(email=email)
+                  u.set_password(password)
+                  u.is_superuser = True
+                  u.is_staff = True
+                  u.save()
+              
+              print('Superuser ensured.')
+              "
+{{- end }}
