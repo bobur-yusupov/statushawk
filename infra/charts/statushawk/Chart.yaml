@@ -2,5 +2,5 @@ apiVersion: v2
 name: statushawk
 description: A Helm chart for StatusHawk (API + Runner)
 type: application
-version: 0.1.0
-appVersion: "1.0.0"
+version: 0.11.1
+appVersion: "0.11.1"
