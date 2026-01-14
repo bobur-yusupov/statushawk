@@ -1,21 +1,17 @@
 from typing import Any
-from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework import status, mixins
+from rest_framework import mixins
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.serializers import BaseSerializer
 from rest_framework.decorators import action
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
-from django.conf import settings
-from django.shortcuts import get_object_or_404
 from django.db.models import QuerySet, Avg, Count, Case, When, IntegerField
 from django.utils import timezone
 from datetime import timedelta
-import httpx
 from .models import Monitor
 from .serializers import (
     MonitorSerializer,
@@ -109,6 +105,20 @@ class MonitorView(
 
         return Response(data=data)
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="period",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description="Time period for history",
+                enum=["24h", "7d", "30d"],
+                required=False,
+            )
+        ],
+        responses={200: MonitorHistorySerializer(many=True)},
+        description="Get raw history logs for graphing with pagination support",
+    )
     @action(detail=True, methods=["get"])
     def history(self, request: Request, pk: Any = None) -> Response:
         """
@@ -134,35 +144,3 @@ class MonitorView(
 
         serializer = MonitorHistorySerializer(queryset, many=True)
         return Response(serializer.data)
-
-
-class MonitorCheckProxyView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request: Request, monitor_id: int) -> Response:
-        # 0. VALIDATE INPUTS
-        if not monitor_id:
-            return Response(
-                {"error": "Monitor ID is required."}, status=status.HTTP_400_BAD_REQUEST
-            )
-        # 1. AUTHORIZATION (Gateway DB)
-        # We verify ownership using the Gateway's local Monitor table.
-        # This prevents BOLA (Broken Object Level Authorization).
-        # Use get_object_or_404
-        monitor = get_object_or_404(Monitor, id=monitor_id, user=request.user)
-
-        # 2. CONSTRUCT INTERNAL REQUEST
-        # We target the private K8s service name of the runner.
-        runner_url = f"{settings.RUNNER_SERVICE_URL}/api/checks/"
-
-        # 3. PREPARE PARAMS
-        # We explicitly set 'target_id' based on the verified monitor.id
-        # We pass through safe query params like 'limit'.
-        params = {"target_id": monitor.id, "limit": request.GET.get("limit", 50)}
-
-        try:
-            response = httpx.get(runner_url, params=params, timeout=3.0)
-            return Response(response.json())
-
-        except httpx.RequestError:
-            return Response({"error": "Metric"})
