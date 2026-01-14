@@ -7,7 +7,7 @@ replicaCount: 1
 image:
   repository: devyusupov/statushawk-api-gateway
   pullPolicy: IfNotPresent
-  tag: "0.11.0"
+  tag: "0.11.1"
 
 # This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
@@ -73,11 +73,11 @@ runner:
 
   resources:
     limits:
-      cpu: 200m
-      memory: 256Mi
+      cpu: 500m
+      memory: 1Gi
     requests:
-      cpu: 100m
-      memory: 128Mi
+      cpu: 300m
+      memory: 256Mi
 
   autoscaling:
     enabled: true

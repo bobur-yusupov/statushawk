@@ -19,11 +19,12 @@ INSTALLED_APPS = [
     "accounts",
     "common",
     "monitor",
-    "django_celery_results",
+    "corsheaders",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",

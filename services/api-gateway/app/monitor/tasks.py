@@ -6,7 +6,13 @@ from django.utils import timezone
 from .models import Monitor, MonitorResult
 
 
-@shared_task(name="monitor.tasks.check_monitor_task", bind=True)
+@shared_task(
+    name="monitor.tasks.check_monitor_task",
+    bind=True,
+    queue="runner_queue",
+    acks_late=True,
+    reject_on_worker_lost=True,
+)
 def check_monitor_task(self: Any, monitor_id: int) -> str:
     try:
         monitor = Monitor.objects.only("url", "interval", "is_active").get(
