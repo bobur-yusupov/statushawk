@@ -149,11 +149,16 @@ class MonitorView(
         responses={
             200: OpenApiTypes.OBJECT,
         },
-        description="Get global dashboard statistics including total uptime and recent incidents",
+        description=(
+            "Get global dashboard statistics including "
+            "total uptime and recent incidents"
+        ),
     )
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=["get"])
     def dashboard_stats(self, request: Request) -> Response:
-        user_monitors = Monitor.objects.filter(user=request.user)
+        user_monitors = Monitor.objects.filter(
+            user=request.user  # type: ignore[misc]
+        )
 
         total_monitors = user_monitors.count()
         active_monitors = user_monitors.filter(is_active=True).count()
@@ -163,39 +168,50 @@ class MonitorView(
         latency_count = 0
 
         for m in user_monitors.filter(is_active=True):
-            last = m.results.order_by('-created_at').first()
+            last = m.results.order_by("-created_at").first()
             if last:
                 if not last.is_up:
                     down_count += 1
                 if last.response_time_ms is not None:
                     total_latency += last.response_time_ms
                     latency_count += 1
-        
+
         avg_latency = (total_latency / latency_count) if latency_count > 0 else 0.0
         up_count = active_monitors - down_count
 
         recent_failures_qs = (
-            MonitorResult.objects.filter(monitor__user=request.user, is_up=False)
-            .select_related('monitor')
-            .order_by('-created_at')[:5]
+            MonitorResult.objects.filter(
+                monitor__user=request.user,  # type: ignore[misc]
+                is_up=False,
+            )
+            .select_related("monitor")
+            .order_by("-created_at")[:5]
         )
 
         recent_failures = []
         for res in recent_failures_qs:
-            recent_failures.append({
-                "id": res.id,
-                "monitor_name": res.monitor.name,
-                "url": res.monitor.url,
-                "code": res.status_code,
-                "created_at": res.created_at,
-                "reason": "Timeout" if res.status_code == 0 else f"{res.status_code} Error"
-            })
+            recent_failures.append(
+                {
+                    "id": res.id,
+                    "monitor_name": res.monitor.name,
+                    "url": res.monitor.url,
+                    "code": res.status_code,
+                    "created_at": res.created_at,
+                    "reason": (
+                        "Timeout"
+                        if res.status_code == 0
+                        else f"{res.status_code} Error"
+                    ),
+                }
+            )
 
-        return Response({
-            "total": total_monitors,
-            "active": active_monitors,
-            "up": up_count,
-            "down": down_count,
-            "avg_latency": round(avg_latency, 2),
-            "recent_failures": recent_failures
-        })
+        return Response(
+            {
+                "total": total_monitors,
+                "active": active_monitors,
+                "up": up_count,
+                "down": down_count,
+                "avg_latency": round(avg_latency, 2),
+                "recent_failures": recent_failures,
+            }
+        )
