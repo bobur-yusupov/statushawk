@@ -1,18 +1,23 @@
 from typing import Any
-from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework import status, mixins
+from rest_framework import mixins
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.serializers import BaseSerializer
-from django.conf import settings
-from django.shortcuts import get_object_or_404
-from django.db.models import QuerySet
-import httpx
+from rest_framework.decorators import action
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
+from django.db.models import QuerySet, Avg, Count, Case, When, IntegerField
+from django.utils import timezone
+from datetime import timedelta
 from .models import Monitor
-from .serializers import MonitorSerializer
+from .serializers import (
+    MonitorSerializer,
+    MonitorHistorySerializer,
+    MonitorStatsSerializer,
+)
 
 
 class MonitorPagination(PageNumberPagination):
@@ -39,34 +44,103 @@ class MonitorView(
     def perform_create(self, serializer: BaseSerializer[Any]) -> None:
         serializer.save(user=self.request.user)
 
-
-class MonitorCheckProxyView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request: Request, monitor_id: int) -> Response:
-        # 0. VALIDATE INPUTS
-        if not monitor_id:
-            return Response(
-                {"error": "Monitor ID is required."}, status=status.HTTP_400_BAD_REQUEST
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="period",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description="Time period for statistics",
+                enum=["24h", "7d", "30d"],
+                default="24h",
             )
-        # 1. AUTHORIZATION (Gateway DB)
-        # We verify ownership using the Gateway's local Monitor table.
-        # This prevents BOLA (Broken Object Level Authorization).
-        # Use get_object_or_404
-        monitor = get_object_or_404(Monitor, id=monitor_id, user=request.user)
+        ],
+        responses={200: MonitorStatsSerializer},
+        description="Get aggregated statistics for a specific monitor",
+    )
+    @action(detail=True, methods=["get"])
+    def stats(self, request: Request, pk: Any = None) -> Response:
+        """
+        Get aggregated statistics for a specific monitor.
+        Query Params: ?period=24h (default), 7d, 30d
+        """
+        monitor = self.get_object()
+        period_param = request.query_params.get("period", "24h")
+        now = timezone.now()
 
-        # 2. CONSTRUCT INTERNAL REQUEST
-        # We target the private K8s service name of the runner.
-        runner_url = f"{settings.RUNNER_SERVICE_URL}/api/checks/"
+        if period_param == "7d":
+            start_time = now - timedelta(days=7)
+        elif period_param == "30d":
+            start_time = now - timedelta(days=30)
+        else:
+            start_time = now - timedelta(hours=24)
 
-        # 3. PREPARE PARAMS
-        # We explicitly set 'target_id' based on the verified monitor.id
-        # We pass through safe query params like 'limit'.
-        params = {"target_id": monitor.id, "limit": request.GET.get("limit", 50)}
+        qs = monitor.results.filter(created_at__gt=start_time)
 
-        try:
-            response = httpx.get(runner_url, params=params, timeout=3.0)
-            return Response(response.json())
+        stats = qs.aggregate(
+            total_checks=Count("id"),
+            up_count=Count(Case(When(is_up=True, then=1), output_field=IntegerField())),
+            down_count=Count(
+                Case(When(is_up=False, then=1), output_field=IntegerField())
+            ),
+            avg_latency=Avg("response_time_ms"),
+        )
 
-        except httpx.RequestError:
-            return Response({"error": "Metric"})
+        total = stats["total_checks"]
+        up = stats["up_count"] or 0
+        uptime = (up / total * 100) if total > 0 else 0.0
+        last_check = monitor.results.order_by("-created_at").first()
+
+        data = {
+            "period": period_param,
+            "total_checks": total,
+            "up_count": up,
+            "down_count": stats["down_count"] or 0,
+            "uptime_percentage": round(uptime, 2),
+            "avg_response_time": round(stats["avg_latency"] or 0, 2),
+            "last_check": (
+                MonitorHistorySerializer(last_check).data if last_check else None
+            ),
+        }
+
+        return Response(data=data)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="period",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description="Time period for history",
+                enum=["24h", "7d", "30d"],
+                required=False,
+            )
+        ],
+        responses={200: MonitorHistorySerializer(many=True)},
+        description="Get raw history logs for graphing with pagination support",
+    )
+    @action(detail=True, methods=["get"])
+    def history(self, request: Request, pk: Any = None) -> Response:
+        """
+        Get raw history logs for graphing.
+        Pagination is enabled by default via settings.
+        """
+        monitor = self.get_object()
+
+        # Optimize: Only fetch fields needed for the graph
+        queryset = monitor.results.all().order_by("-created_at")
+
+        # Optional: Filter by period here too
+        period_param = request.query_params.get("period")
+        if period_param == "24h":
+            queryset = queryset.filter(
+                created_at__gte=timezone.now() - timedelta(hours=24)
+            )
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = MonitorHistorySerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = MonitorHistorySerializer(queryset, many=True)
+        return Response(serializer.data)
