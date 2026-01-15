@@ -36,7 +36,6 @@ types-requests = "^2.32.4.20250913"
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings.local"
 python_files = ["test_*.py", "*_test.py"]
-testpaths = ["tests"]
 pythonpath = ["app"]
 addopts = "--import-mode=importlib"
 filterwarnings = [
