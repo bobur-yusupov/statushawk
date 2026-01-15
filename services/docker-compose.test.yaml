@@ -1,9 +1,9 @@
 version: "3.9"
 
 services:
-  api-gateway:
+  backend:
     build:
-      context: ./api-gateway
+      context: ./backend
       dockerfile: Dockerfile.dev
     ports:
       - "8000:8000"
@@ -16,7 +16,7 @@ services:
       - DB_ENGINE=django.db.backends.postgresql
       - DJANGO_SECRET_KEY=django-insecure-^jihrnki)62kxf_9m$qv+kt0@ea927lb#%v*ci5&(bybfb^2@m
     volumes:
-      - ./api-gateway/app:/app/app
+      - ./backend/app:/app/app
     depends_on:
       - db
     command: >
@@ -38,9 +38,9 @@ services:
       context: ./api-gateway
       dockerfile: Dockerfile.dev
     env_file:
-      - ./api-gateway/.env
+      - ./backend/.env
     volumes:
-      - ./api-gateway/app:/app/app
+      - ./backend/app:/app/app
     depends_on:
       - db
       - redis
