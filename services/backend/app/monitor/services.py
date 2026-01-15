@@ -44,7 +44,9 @@ class MonitorService(BaseService[Monitor]):
             "last_check": last_check,
         }
 
-    def get_history(self, monitor: Monitor, period: Optional[str] = None) -> QuerySet[MonitorResult]:
+    def get_history(
+        self, monitor: Monitor, period: Optional[str] = None
+    ) -> QuerySet[MonitorResult]:
         """Get history logs for a monitor."""
         return self.result_crud.get_history(monitor, period)
 

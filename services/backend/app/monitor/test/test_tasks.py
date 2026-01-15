@@ -2,7 +2,6 @@ import pytest
 from typing import Any
 from unittest.mock import patch, Mock
 from django.contrib.auth import get_user_model
-from django.utils import timezone
 from faker import Faker
 from monitor.models import Monitor, MonitorResult
 from monitor.tasks import check_monitor_task
@@ -24,7 +23,7 @@ def monitor(user: Any) -> Monitor:
         url="https://example.com",
         monitor_type="HTTP",
         is_active=True,
-        interval=60
+        interval=60,
     )
 
 
@@ -32,9 +31,11 @@ def monitor(user: Any) -> Monitor:
 class TestCheckMonitorTask:
     """Unit tests for the check_monitor_task"""
 
-    @patch('monitor.tasks.requests.get')
-    @patch('monitor.tasks.check_monitor_task.apply_async')
-    def test_successful_check(self, mock_apply_async: Mock, mock_get: Mock, monitor: Monitor) -> None:
+    @patch("monitor.tasks.requests.get")
+    @patch("monitor.tasks.check_monitor_task.apply_async")
+    def test_successful_check(
+        self, mock_apply_async: Mock, mock_get: Mock, monitor: Monitor
+    ) -> None:
         """Test successful monitor check"""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -49,9 +50,11 @@ class TestCheckMonitorTask:
         assert monitor.last_checked_at is not None
         mock_apply_async.assert_called_once()
 
-    @patch('monitor.tasks.requests.get')
-    @patch('monitor.tasks.check_monitor_task.apply_async')
-    def test_failed_check(self, mock_apply_async: Mock, mock_get: Mock, monitor: Monitor) -> None:
+    @patch("monitor.tasks.requests.get")
+    @patch("monitor.tasks.check_monitor_task.apply_async")
+    def test_failed_check(
+        self, mock_apply_async: Mock, mock_get: Mock, monitor: Monitor
+    ) -> None:
         """Test failed monitor check"""
         mock_response = Mock()
         mock_response.status_code = 500
@@ -64,11 +67,14 @@ class TestCheckMonitorTask:
         monitor.refresh_from_db()
         assert monitor.status == "DOWN"
 
-    @patch('monitor.tasks.requests.get')
-    @patch('monitor.tasks.check_monitor_task.apply_async')
-    def test_timeout_check(self, mock_apply_async: Mock, mock_get: Mock, monitor: Monitor) -> None:
+    @patch("monitor.tasks.requests.get")
+    @patch("monitor.tasks.check_monitor_task.apply_async")
+    def test_timeout_check(
+        self, mock_apply_async: Mock, mock_get: Mock, monitor: Monitor
+    ) -> None:
         """Test monitor check with timeout"""
         import requests
+
         mock_get.side_effect = requests.RequestException("Timeout")
 
         result = check_monitor_task(monitor.id)
@@ -79,7 +85,7 @@ class TestCheckMonitorTask:
         assert result_obj.status_code == 0
         assert result_obj.is_up is False
 
-    @patch('monitor.tasks.check_monitor_task.apply_async')
+    @patch("monitor.tasks.check_monitor_task.apply_async")
     def test_inactive_monitor(self, mock_apply_async: Mock, monitor: Monitor) -> None:
         """Test check on inactive monitor"""
         monitor.is_active = False
@@ -91,7 +97,7 @@ class TestCheckMonitorTask:
         assert not MonitorResult.objects.filter(monitor=monitor).exists()
         mock_apply_async.assert_not_called()
 
-    @patch('monitor.tasks.check_monitor_task.apply_async')
+    @patch("monitor.tasks.check_monitor_task.apply_async")
     def test_nonexistent_monitor(self, mock_apply_async: Mock) -> None:
         """Test check on non-existent monitor"""
         result = check_monitor_task(99999)
@@ -99,10 +105,12 @@ class TestCheckMonitorTask:
         assert "does not exist" in result.lower()
         mock_apply_async.assert_not_called()
 
-    @patch('monitor.tasks.time.time')
-    @patch('monitor.tasks.requests.get')
-    @patch('monitor.tasks.check_monitor_task.apply_async')
-    def test_response_time_recorded(self, mock_apply_async: Mock, mock_get: Mock, mock_time: Mock, monitor: Monitor) -> None:
+    @patch("monitor.tasks.time.time")
+    @patch("monitor.tasks.requests.get")
+    @patch("monitor.tasks.check_monitor_task.apply_async")
+    def test_response_time_recorded(
+        self, mock_apply_async: Mock, mock_get: Mock, mock_time: Mock, monitor: Monitor
+    ) -> None:
         """Test that response time is recorded"""
         mock_time.side_effect = [0.0, 0.150]  # 150ms elapsed
         mock_response = Mock()
@@ -115,9 +123,11 @@ class TestCheckMonitorTask:
         assert result_obj is not None
         assert result_obj.response_time_ms == 150
 
-    @patch('monitor.tasks.requests.get')
-    @patch('monitor.tasks.check_monitor_task.apply_async')
-    def test_next_check_scheduled(self, mock_apply_async: Mock, mock_get: Mock, monitor: Monitor) -> None:
+    @patch("monitor.tasks.requests.get")
+    @patch("monitor.tasks.check_monitor_task.apply_async")
+    def test_next_check_scheduled(
+        self, mock_apply_async: Mock, mock_get: Mock, monitor: Monitor
+    ) -> None:
         """Test that next check is scheduled with correct interval"""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -128,11 +138,13 @@ class TestCheckMonitorTask:
         mock_apply_async.assert_called_once()
         call_args = mock_apply_async.call_args
         assert call_args[0][0] == (monitor.id,)
-        assert call_args[1]['countdown'] == monitor.interval
+        assert call_args[1]["countdown"] == monitor.interval
 
-    @patch('monitor.tasks.requests.get')
-    @patch('monitor.tasks.check_monitor_task.apply_async')
-    def test_status_codes_classification(self, mock_apply_async: Mock, mock_get: Mock, monitor: Monitor) -> None:
+    @patch("monitor.tasks.requests.get")
+    @patch("monitor.tasks.check_monitor_task.apply_async")
+    def test_status_codes_classification(
+        self, mock_apply_async: Mock, mock_get: Mock, monitor: Monitor
+    ) -> None:
         """Test different status codes are classified correctly"""
         test_cases = [
             (200, True),

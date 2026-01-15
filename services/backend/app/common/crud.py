@@ -40,7 +40,9 @@ class RetrieveMixin(BaseCRUD[T]):
 
 
 class ListMixin(BaseCRUD[T]):
-    def list(self, user: Any = None, filters: Optional[Dict[str, Any]] = None) -> models.QuerySet[T]:
+    def list(
+        self, user: Any = None, filters: Optional[Dict[str, Any]] = None
+    ) -> models.QuerySet[T]:
         """
         Generic list. Auto-filters by user.
         """
