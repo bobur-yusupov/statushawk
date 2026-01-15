@@ -1,12 +1,12 @@
-name: API Gateway Testing
+name: Backend CI
 
 on:
     push:
         paths:
-            - "services/api-gateway/**"
+            - "services/backend/**"
     pull_request:
         paths:
-            - "services/api-gateway/**"
+            - "services/backend/**"
 
 jobs:
     lint:
@@ -26,17 +26,17 @@ jobs:
 
             - name: Install dependencies and configure environment
               run: |
-                cd services/api-gateway
+                cd services/backend
                 poetry install --no-root --no-interaction
 
             - name: Run linter
               run: |
-                cd services/api-gateway &&
+                cd services/backend &&
                 poetry run flake8 .
             
             - name: Run MyPy
               run: |
-                cd services/api-gateway &&
+                cd services/backend &&
                 poetry run mypy .
     
     test:
@@ -57,7 +57,7 @@ jobs:
             - name: Run Tests
               run: |
                 cd services/ &&
-                ./test.sh api-gateway
+                ./test.sh backend
     
     version:
       runs-on: ubuntu-latest
@@ -82,12 +82,12 @@ jobs:
 
             - name: Install dependencies and configure environment
               run: |
-                cd services/api-gateway
+                cd services/backend
                 poetry install --no-root --no-interaction
 
             - name: Determine & Bump Version
               run: |
-                cd services/api-gateway
+                cd services/backend
                 
                 # Logic to determine bump type (Major, Minor, or Patch) based on last commit
                 COMMIT_MESSAGE=$(git log -1 --pretty=%B)
@@ -145,4 +145,4 @@ jobs:
             - name: Build, Tag, and Push Image
               run: |
                 cd services &&
-                ./build-and-push.sh api-gateway
+                ./build-and-push.sh backend
