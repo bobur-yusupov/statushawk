@@ -31,7 +31,7 @@ services:
     depends_on:
       - db
       - redis
-    command: "celery -A app.config worker -Q runner_queue --pool=gevent --concurrency=20 --loglevel=info"
+    command: "celery -A config worker -Q runner_queue --pool=gevent --concurrency=20 --loglevel=info"
 
   db:
     image: postgres:17

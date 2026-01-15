@@ -17,6 +17,7 @@ services:
       - DJANGO_SECRET_KEY=django-insecure-^jihrnki)62kxf_9m$qv+kt0@ea927lb#%v*ci5&(bybfb^2@m
     volumes:
       - ./backend/app:/app/app
+      - ./backend/tests:/app/tests
     depends_on:
       - db
     command: >
@@ -35,12 +36,19 @@ services:
   
   runner:
     build:
-      context: ./api-gateway
+      context: ./backend
       dockerfile: Dockerfile.dev
-    env_file:
-      - ./backend/.env
+    environment:
+      - DB_NAME=db
+      - DB_USER=user
+      - DB_PASSWORD=password
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_ENGINE=django.db.backends.postgresql
+      - DJANGO_SECRET_KEY=django-insecure-^jihrnki)62kxf_9m$qv+kt0@ea927lb#%v*ci5&(bybfb^2@m
     volumes:
       - ./backend/app:/app/app
+      - ./backend/tests:/app/tests
     depends_on:
       - db
       - redis
