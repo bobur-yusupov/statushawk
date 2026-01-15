@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "api-gateway"
+name = "backend"
 version = "0.11.1"
-description = "API Gateway Service"
+description = "Backend Service"
 package-mode = false
 authors = ["Bobur Yusupov <yusufi.bobur@gmail.com>"]
 readme = "README.md"
@@ -36,6 +36,9 @@ types-requests = "^2.32.4.20250913"
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings.local"
 python_files = ["test_*.py", "*_test.py"]
+testpaths = ["tests"]
+pythonpath = ["app"]
+addopts = "--import-mode=importlib"
 filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::django.utils.deprecation.RemovedInDjango70Warning",
