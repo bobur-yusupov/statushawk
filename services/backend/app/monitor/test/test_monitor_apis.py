@@ -298,7 +298,9 @@ class TestMonitorStatsAPI:
 @pytest.mark.django_db
 class TestMonitorHistoryAPI:
 
-    def test_history_returns_results(self, authenticated_client: APIClient, user: Any) -> None:
+    def test_history_returns_results(
+        self, authenticated_client: APIClient, user: Any
+    ) -> None:
         monitor = Monitor.objects.create(
             user=user, name=fake.company(), url=fake.url(), monitor_type="HTTP"
         )
@@ -314,7 +316,9 @@ class TestMonitorHistoryAPI:
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data["results"]) == 5
 
-    def test_history_24h_filter(self, authenticated_client: APIClient, user: Any) -> None:
+    def test_history_24h_filter(
+        self, authenticated_client: APIClient, user: Any
+    ) -> None:
         monitor = Monitor.objects.create(
             user=user, name=fake.company(), url=fake.url(), monitor_type="HTTP"
         )
@@ -327,7 +331,7 @@ class TestMonitorHistoryAPI:
         )
         result1.created_at = now - timedelta(hours=12)
         result1.save()
-        
+
         result2 = MonitorResult.objects.create(
             monitor=monitor,
             status_code=200,
@@ -343,7 +347,9 @@ class TestMonitorHistoryAPI:
         assert response.status_code == status.HTTP_200_OK
         assert response.data["count"] == 1
 
-    def test_history_pagination(self, authenticated_client: APIClient, user: Any) -> None:
+    def test_history_pagination(
+        self, authenticated_client: APIClient, user: Any
+    ) -> None:
         monitor = Monitor.objects.create(
             user=user, name=fake.company(), url=fake.url(), monitor_type="HTTP"
         )
@@ -359,7 +365,9 @@ class TestMonitorHistoryAPI:
         assert len(response.data["results"]) == 10
         assert response.data["count"] == 25
 
-    def test_history_ordered_by_created_at(self, authenticated_client: APIClient, user: Any) -> None:
+    def test_history_ordered_by_created_at(
+        self, authenticated_client: APIClient, user: Any
+    ) -> None:
         monitor = Monitor.objects.create(
             user=user, name=fake.company(), url=fake.url(), monitor_type="HTTP"
         )
@@ -388,7 +396,9 @@ class TestMonitorHistoryAPI:
 @pytest.mark.django_db
 class TestDashboardStatsAPI:
 
-    def test_dashboard_stats_basic(self, authenticated_client: APIClient, user: Any) -> None:
+    def test_dashboard_stats_basic(
+        self, authenticated_client: APIClient, user: Any
+    ) -> None:
         for i in range(3):
             Monitor.objects.create(
                 user=user,
@@ -403,12 +413,22 @@ class TestDashboardStatsAPI:
         assert response.data["total"] == 3
         assert response.data["active"] == 3
 
-    def test_dashboard_stats_with_results(self, authenticated_client: APIClient, user: Any) -> None:
+    def test_dashboard_stats_with_results(
+        self, authenticated_client: APIClient, user: Any
+    ) -> None:
         monitor1 = Monitor.objects.create(
-            user=user, name=fake.company(), url=fake.url(), monitor_type="HTTP", is_active=True
+            user=user,
+            name=fake.company(),
+            url=fake.url(),
+            monitor_type="HTTP",
+            is_active=True,
         )
         monitor2 = Monitor.objects.create(
-            user=user, name=fake.company(), url=fake.url(), monitor_type="HTTP", is_active=True
+            user=user,
+            name=fake.company(),
+            url=fake.url(),
+            monitor_type="HTTP",
+            is_active=True,
         )
         MonitorResult.objects.create(
             monitor=monitor1, status_code=200, response_time_ms=100, is_up=True
@@ -423,7 +443,9 @@ class TestDashboardStatsAPI:
         assert response.data["down"] == 1
         assert response.data["avg_latency"] == 150.0
 
-    def test_dashboard_stats_recent_failures(self, authenticated_client: APIClient, user: Any) -> None:
+    def test_dashboard_stats_recent_failures(
+        self, authenticated_client: APIClient, user: Any
+    ) -> None:
         monitor = Monitor.objects.create(
             user=user, name=fake.company(), url=fake.url(), monitor_type="HTTP"
         )
@@ -437,7 +459,9 @@ class TestDashboardStatsAPI:
         assert len(response.data["recent_failures"]) == 3
         assert response.data["recent_failures"][0]["monitor_name"] == monitor.name
 
-    def test_dashboard_stats_only_user_data(self, authenticated_client: APIClient, user: Any, other_user: Any) -> None:
+    def test_dashboard_stats_only_user_data(
+        self, authenticated_client: APIClient, user: Any, other_user: Any
+    ) -> None:
         Monitor.objects.create(
             user=user, name=fake.company(), url=fake.url(), monitor_type="HTTP"
         )
@@ -449,12 +473,22 @@ class TestDashboardStatsAPI:
         assert response.status_code == status.HTTP_200_OK
         assert response.data["total"] == 1
 
-    def test_dashboard_stats_inactive_monitors(self, authenticated_client: APIClient, user: Any) -> None:
+    def test_dashboard_stats_inactive_monitors(
+        self, authenticated_client: APIClient, user: Any
+    ) -> None:
         Monitor.objects.create(
-            user=user, name=fake.company(), url=fake.url(), monitor_type="HTTP", is_active=True
+            user=user,
+            name=fake.company(),
+            url=fake.url(),
+            monitor_type="HTTP",
+            is_active=True,
         )
         Monitor.objects.create(
-            user=user, name=fake.company(), url=fake.url(), monitor_type="HTTP", is_active=False
+            user=user,
+            name=fake.company(),
+            url=fake.url(),
+            monitor_type="HTTP",
+            is_active=False,
         )
 
         response = authenticated_client.get("/api/v1/monitors/dashboard_stats/")

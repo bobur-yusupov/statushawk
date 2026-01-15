@@ -1,15 +1,16 @@
 from typing import Dict, Any, Optional
+from django.db.models import QuerySet
 from django.utils import timezone
 from datetime import timedelta
 from common.services import BaseService
-from .models import Monitor
+from .models import Monitor, MonitorResult
 from .crud import MonitorCRUD, MonitorResultCRUD
 
 
 class MonitorService(BaseService[Monitor]):
     model = Monitor
     crud_class = MonitorCRUD
-    
+
     def __init__(self) -> None:
         super().__init__()
         self.result_crud = MonitorResultCRUD()
@@ -17,7 +18,7 @@ class MonitorService(BaseService[Monitor]):
     def get_stats(self, monitor: Monitor, period: str = "24h") -> Dict[str, Any]:
         """Get aggregated statistics for a monitor."""
         now = timezone.now()
-        
+
         if period == "7d":
             start_time = now - timedelta(days=7)
         elif period == "30d":
@@ -43,20 +44,21 @@ class MonitorService(BaseService[Monitor]):
             "last_check": last_check,
         }
 
-    def get_history(self, monitor: Monitor, period: Optional[str] = None):
+    def get_history(self, monitor: Monitor, period: Optional[str] = None) -> QuerySet[MonitorResult]:
         """Get history logs for a monitor."""
         return self.result_crud.get_history(monitor, period)
 
     def get_dashboard_stats(self, user: Any) -> Dict[str, Any]:
         """Get global dashboard statistics for a user."""
-        total_monitors = self.crud.count_by_user(user)
-        active_monitors = self.crud.count_by_user(user, is_active=True)
+        monitor_crud = MonitorCRUD()
+        total_monitors = monitor_crud.count_by_user(user)
+        active_monitors = monitor_crud.count_by_user(user, is_active=True)
 
         down_count = 0
         total_latency = 0.0
         latency_count = 0
 
-        for m in self.crud.filter_by_user(user, is_active=True):
+        for m in monitor_crud.filter_by_user(user, is_active=True):
             last = self.result_crud.get_last_check(m)
             if last:
                 if not last.is_up:
@@ -72,14 +74,20 @@ class MonitorService(BaseService[Monitor]):
 
         recent_failures = []
         for res in recent_failures_qs:
-            recent_failures.append({
-                "id": res.id,
-                "monitor_name": res.monitor.name,
-                "url": res.monitor.url,
-                "code": res.status_code,
-                "created_at": res.created_at,
-                "reason": "Timeout" if res.status_code == 0 else f"{res.status_code} Error",
-            })
+            recent_failures.append(
+                {
+                    "id": res.id,
+                    "monitor_name": res.monitor.name,
+                    "url": res.monitor.url,
+                    "code": res.status_code,
+                    "created_at": res.created_at,
+                    "reason": (
+                        "Timeout"
+                        if res.status_code == 0
+                        else f"{res.status_code} Error"
+                    ),
+                }
+            )
 
         return {
             "total": total_monitors,

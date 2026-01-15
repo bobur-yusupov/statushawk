@@ -76,7 +76,11 @@ class TestMonitor:
         assert Monitor.objects.count() == 0
 
     def test_monitor_types(self, user: Any) -> None:
-        for monitor_type in [Monitor.MonitorType.HTTP, Monitor.MonitorType.PING, Monitor.MonitorType.TCP]:
+        for monitor_type in [
+            Monitor.MonitorType.HTTP,
+            Monitor.MonitorType.PING,
+            Monitor.MonitorType.TCP,
+        ]:
             monitor = Monitor.objects.create(
                 user=user,
                 name=f"{monitor_type} Monitor",
@@ -92,8 +96,12 @@ class TestMonitor:
             url="https://example.com",
             monitor_type=Monitor.MonitorType.HTTP,
         )
-        
-        for status in [Monitor.StatusType.UP, Monitor.StatusType.DOWN, Monitor.StatusType.PAUSED]:
+
+        for status in [
+            Monitor.StatusType.UP,
+            Monitor.StatusType.DOWN,
+            Monitor.StatusType.PAUSED,
+        ]:
             monitor.status = status
             monitor.save()
             monitor.refresh_from_db()
@@ -106,7 +114,7 @@ class TestMonitor:
             url="https://example.com",
             monitor_type=Monitor.MonitorType.HTTP,
         )
-        
+
         assert monitor.created_at is not None
         assert monitor.updated_at is not None
         assert monitor.created_at <= monitor.updated_at
@@ -121,14 +129,14 @@ class TestMonitorResult:
             url="https://example.com",
             monitor_type=Monitor.MonitorType.HTTP,
         )
-        
+
         result = MonitorResult.objects.create(
             monitor=monitor,
             status_code=200,
             response_time_ms=150,
             is_up=True,
         )
-        
+
         assert result.monitor == monitor
         assert result.status_code == 200
         assert result.response_time_ms == 150
@@ -142,12 +150,12 @@ class TestMonitorResult:
             url="https://example.com",
             monitor_type=Monitor.MonitorType.HTTP,
         )
-        
+
         result = MonitorResult.objects.create(
             monitor=monitor,
             is_up=True,
         )
-        
+
         assert "Test Monitor" in str(result)
 
     def test_monitor_result_cascade_delete(self, user: Any) -> None:
@@ -157,12 +165,12 @@ class TestMonitorResult:
             url="https://example.com",
             monitor_type=Monitor.MonitorType.HTTP,
         )
-        
+
         MonitorResult.objects.create(monitor=monitor, is_up=True)
         MonitorResult.objects.create(monitor=monitor, is_up=False)
-        
+
         assert MonitorResult.objects.filter(monitor=monitor).count() == 2
-        
+
         monitor.delete()
         assert MonitorResult.objects.count() == 0
 
@@ -173,11 +181,11 @@ class TestMonitorResult:
             url="https://example.com",
             monitor_type=Monitor.MonitorType.PING,
         )
-        
+
         result = MonitorResult.objects.create(
             monitor=monitor,
             is_up=False,
         )
-        
+
         assert result.status_code is None
         assert result.response_time_ms is None

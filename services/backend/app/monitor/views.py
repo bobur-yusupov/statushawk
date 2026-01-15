@@ -65,13 +65,14 @@ class MonitorView(
     def stats(self, request: Request, pk: Any = None) -> Response:
         monitor = self.get_object()
         period = request.query_params.get("period", "24h")
-        
+
         stats_data = self.service.get_stats(monitor, period)
         stats_data["last_check"] = (
             MonitorHistorySerializer(stats_data["last_check"]).data
-            if stats_data["last_check"] else None
+            if stats_data["last_check"]
+            else None
         )
-        
+
         return Response(data=stats_data)
 
     @extend_schema(
@@ -92,9 +93,9 @@ class MonitorView(
     def history(self, request: Request, pk: Any = None) -> Response:
         monitor = self.get_object()
         period = request.query_params.get("period")
-        
+
         queryset = self.service.get_history(monitor, period)
-        
+
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = MonitorHistorySerializer(page, many=True)
