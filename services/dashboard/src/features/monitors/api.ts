@@ -39,9 +39,9 @@ export const monitorKeys = {
   all: ['monitors'] as const,
 };
 
-export const getMonitors = async () => {
-  const { data } = await api.get<PaginatedResponse<Monitor>>('/monitors/');
-  return data.results; 
+export const getMonitors = async (page = 1) => {
+  const { data } = await api.get<PaginatedResponse<Monitor>>(`/monitors/?page=${page}`);
+  return data;
 };
 
 export const createMonitor = async (payload: { name: string; url: string; interval: number; monitor_type: string }) => {

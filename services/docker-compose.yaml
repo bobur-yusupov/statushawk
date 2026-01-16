@@ -31,7 +31,23 @@ services:
     depends_on:
       - db
       - redis
+    working_dir: /app/app
     command: "celery -A config worker -Q runner_queue --pool=gevent --concurrency=20 --loglevel=info"
+
+  notification:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/tests:/app/tests
+    depends_on:
+      - db
+      - redis
+    working_dir: /app/app
+    command: "celery -A config worker -Q notification_queue --pool=gevent --concurrency=5 --loglevel=info"
 
   db:
     image: postgres:17

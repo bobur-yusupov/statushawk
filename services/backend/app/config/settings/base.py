@@ -1,8 +1,6 @@
 from pathlib import Path
 import os
 import sys
-import sentry_sdk
-from sentry_sdk.integrations.django import DjangoIntegration
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -19,6 +17,7 @@ INSTALLED_APPS = [
     "accounts",
     "common",
     "monitor",
+    "notifications",
     "corsheaders",
 ]
 
@@ -104,8 +103,8 @@ AUTH_USER_MODEL = "accounts.User"
 CORS_ALLOW_ALL_ORIGINS = True
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "API Gateway",
-    "VERSION": "0.2.0",
+    "TITLE": "StatusHawk API Hub",
+    "VERSION": "0.12.0",
     "DEFAULT_GENERATOR_CLASS": "drf_spectacular.generators.SchemaGenerator",
 }
 
@@ -119,13 +118,6 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
 }
-
-
-# ---------------------------------------------------
-# Services
-# ---------------------------------------------------
-RUNNER_SERVICE_URL = os.environ.get("RUNNER_SERVICE_URL")
-
 
 # ---------------------------------------------------
 # Logging
@@ -165,19 +157,19 @@ LOGGING = {
 # Sentry
 # ---------------------------------------------------
 
-SENTRY_DSN = os.environ.get("SENTRY_DSN", None)
+# SENTRY_DSN = os.environ.get("SENTRY_DSN", None)
 
-if SENTRY_DSN:
-    sentry_sdk.init(
-        dsn=SENTRY_DSN,
-        integrations=[
-            DjangoIntegration(),
-        ],
-        environment=os.environ.get("SENTRY_ENVIRONMENT", "local"),
-        release=os.environ.get("SENTRY_RELEASE", "unknown"),
-        traces_sample_rate=float(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", 1.0)),
-        send_default_pii=True,
-    )
+# if SENTRY_DSN:
+#     sentry_sdk.init(
+#         dsn=SENTRY_DSN,
+#         integrations=[
+#             DjangoIntegration(),
+#         ],
+#         environment=os.environ.get("SENTRY_ENVIRONMENT", "local"),
+#         release=os.environ.get("SENTRY_RELEASE", "unknown"),
+#         traces_sample_rate=float(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", 1.0)),
+#         send_default_pii=True,
+#     )
 
 
 # ---------------------------------------------------
@@ -189,5 +181,10 @@ CELERY_RESULTS_BACKEND = "django-db"
 
 CELERY_TASK_ROUTES = {
     "monitor.tasks.check_monitor_task": {"queue": "runner_queue"},
+    "notifications.tasks.send_notification_task": {"queue": "notification_queue"},
     "*": {"queue": "celery"},
 }
+
+TELEGRAM_BOT_NAME = os.environ.get("TELEGRAM_BOT_NAME", "statushawh_test_bot")
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", None)
+REQUEST_TIMEOUT = 10

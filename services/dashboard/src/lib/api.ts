@@ -16,6 +16,7 @@ api.interceptors.response.use(
             console.warn("Session expired or invalid token. Logging out...");
 
             localStorage.removeItem("token");
+            window.dispatchEvent(new Event("storage"));
 
             if (window.location.pathname !== "/login") {
                 window.location.href = "/login";

@@ -11,7 +11,25 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const [token, setToken] = useState<string | null>(() => localStorage.getItem("token"));
+    const [token, setToken] = useState<string | null>(() => {
+        const storedToken = localStorage.getItem("token");
+        if (storedToken) {
+            api.defaults.headers.common["Authorization"] = `Token ${storedToken}`;
+        }
+        return storedToken;
+    });
+
+    useEffect(() => {
+        const handleStorageChange = () => {
+            const currentToken = localStorage.getItem("token");
+            if (currentToken !== token) {
+                setToken(currentToken);
+            }
+        };
+
+        window.addEventListener("storage", handleStorageChange);
+        return () => window.removeEventListener("storage", handleStorageChange);
+    }, [token]);
 
     useEffect(() => {
         if (token) {

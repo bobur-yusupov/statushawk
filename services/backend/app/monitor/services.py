@@ -2,9 +2,14 @@ from typing import Dict, Any, Optional
 from django.db.models import QuerySet
 from django.utils import timezone
 from datetime import timedelta
+import logging
 from common.services import BaseService
 from .models import Monitor, MonitorResult
 from .crud import MonitorCRUD, MonitorResultCRUD
+from notifications.tasks import send_notification_task
+from notifications.crud import NotificationChannelCRUD
+
+logger = logging.getLogger(__name__)
 
 
 class MonitorService(BaseService[Monitor]):
@@ -14,6 +19,116 @@ class MonitorService(BaseService[Monitor]):
     def __init__(self) -> None:
         super().__init__()
         self.result_crud = MonitorResultCRUD()
+
+    def process_check_result(
+        self, monitor_id: int, is_up: bool, response_time: int, status_code: int
+    ) -> None:
+        """
+        Called by the Runner Worker.
+        Uses strictly existing fields: monitor.status (UP/DOWN string).
+        """
+        logger.info(
+            f"Processing check result for monitor_id={monitor_id}, "
+            f"is_up={is_up}, status_code={status_code}"
+        )
+
+        monitor = self.get(monitor_id)
+        if not monitor:
+            logger.error(f"Monitor {monitor_id} not found")
+            return
+
+        # 1. Determine the New Status String based on the boolean result
+        new_status = Monitor.StatusType.UP if is_up else Monitor.StatusType.DOWN
+
+        # 2. Check for State Change (String Comparison)
+        previous_status = monitor.status
+        status_changed = (previous_status != new_status) and (
+            previous_status != Monitor.StatusType.PAUSED
+        )
+
+        logger.info(
+            f"Monitor {monitor.name}: previous_status={previous_status}, "
+            f"new_status={new_status}, status_changed={status_changed}"
+        )
+
+        # 3. Create the Result Record
+        MonitorResult.objects.create(
+            monitor=monitor,
+            status_code=status_code,
+            response_time_ms=response_time,
+            is_up=is_up,
+        )
+        logger.debug(f"Created MonitorResult for {monitor.name}")
+
+        # 4. Update the Monitor
+        self.update(monitor, status=new_status, last_checked_at=timezone.now())
+        logger.debug(f"Updated monitor {monitor.name} status to {new_status}")
+
+        # 5. Dispatch Alert if status changed
+        if status_changed:
+            logger.info(f"Status changed for {monitor.name}, dispatching alerts")
+            self.dispatch_alerts(monitor, new_status)
+        else:
+            logger.debug(f"No status change for {monitor.name}, skipping alerts")
+
+    def dispatch_alerts(self, monitor: Monitor, new_status: str) -> None:
+        """
+        Finds subscriber channels and pushes tasks to the Notification Queue.
+        """
+        logger.info(
+            f"Dispatching alerts for monitor {monitor.name} (new_status={new_status})"
+        )
+
+        try:
+            channel_crud = NotificationChannelCRUD()
+            channels = channel_crud.filter(
+                user=monitor.user,
+                is_active=True,
+            )
+
+            channel_count = len(list(channels))
+            logger.info(
+                f"Found {channel_count} active notification channels "
+                f"for user {monitor.user.email}"
+            )
+
+            if channel_count == 0:
+                logger.warning(
+                    f"No active notification channels found "
+                    f"for user {monitor.user.email}"
+                )
+                return
+
+            is_up = new_status == Monitor.StatusType.UP
+            subject = f"Alert: {monitor.name} is {'UP 🟢' if is_up else 'DOWN 🔴'}"
+            message = (
+                f"Monitor: {monitor.name}\n"
+                f"URL: {monitor.url}\n"
+                f"Time: {timezone.now().strftime('%Y-%m-%d %H:%M:%S UTC')}\n"
+                f"New Status: {subject}"
+            )
+
+            for channel in channels:
+                logger.info(
+                    f"Sending notification to channel {channel.id} ({channel.provider})"
+                )
+                try:
+                    result = send_notification_task.apply_async(
+                        args=[channel.id, subject, message], queue="notification_queue"
+                    )
+                    logger.info(f"Task queued successfully: task_id={result.id}")
+                except Exception as e:
+                    logger.error(
+                        f"Failed to queue notification task "
+                        f"for channel {channel.id}: {e}",
+                        exc_info=True,
+                    )
+
+        except Exception as e:
+            logger.error(
+                f"Error in dispatch_alerts for monitor {monitor.name}: {e}",
+                exc_info=True,
+            )
 
     def get_stats(self, monitor: Monitor, period: str = "24h") -> Dict[str, Any]:
         """Get aggregated statistics for a monitor."""

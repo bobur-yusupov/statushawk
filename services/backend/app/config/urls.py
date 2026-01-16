@@ -11,6 +11,7 @@ urlpatterns: List[Union[URLPattern, URLResolver]] = [
     path("health/", HealthCheckView.as_view(), name="health-check"),
     path("api/v1/accounts/", include("accounts.urls")),
     path("api/v1/monitors/", include("monitor.urls")),
+    path("api/v1/notifications/", include("notifications.urls")),
 ]
 
 if settings.DEBUG:
