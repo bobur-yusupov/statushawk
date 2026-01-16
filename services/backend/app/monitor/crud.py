@@ -16,14 +16,10 @@ class MonitorResultCRUD(FullCRUD[MonitorResult]):
             monitor=monitor, created_at__gt=start_time
         )
 
-    def get_stats_aggregate(
-        self, queryset: QuerySet[MonitorResult]
-    ) -> Dict[str, Any]:
+    def get_stats_aggregate(self, queryset: QuerySet[MonitorResult]) -> Dict[str, Any]:
         return queryset.aggregate(
             total_checks=Count("id"),
-            up_count=Count(
-                Case(When(is_up=True, then=1), output_field=IntegerField())
-            ),
+            up_count=Count(Case(When(is_up=True, then=1), output_field=IntegerField())),
             down_count=Count(
                 Case(When(is_up=False, then=1), output_field=IntegerField())
             ),
@@ -32,9 +28,7 @@ class MonitorResultCRUD(FullCRUD[MonitorResult]):
 
     def get_last_check(self, monitor: Monitor) -> Optional[MonitorResult]:
         return (  # type: ignore[attr-defined]
-            self.model.objects.filter(monitor=monitor)
-            .order_by("-created_at")
-            .first()
+            self.model.objects.filter(monitor=monitor).order_by("-created_at").first()
         )
 
     def get_history(
@@ -51,9 +45,7 @@ class MonitorResultCRUD(FullCRUD[MonitorResult]):
 
         return queryset
 
-    def get_recent_failures(
-        self, user: Any, limit: int = 5
-    ) -> QuerySet[MonitorResult]:
+    def get_recent_failures(self, user: Any, limit: int = 5) -> QuerySet[MonitorResult]:
         return (  # type: ignore[attr-defined]
             self.model.objects.filter(monitor__user=user, is_up=False)
             .select_related("monitor")
@@ -67,9 +59,7 @@ class MonitorCRUD(FullCRUD[Monitor]):
     def filter_by_user(
         self, user: Any, is_active: Optional[bool] = None
     ) -> QuerySet[Monitor]:
-        queryset = self.model.objects.filter(  # type: ignore[attr-defined]
-            user=user
-        )
+        queryset = self.model.objects.filter(user=user)  # type: ignore[attr-defined]
         if is_active is not None:
             queryset = queryset.filter(is_active=is_active)
         return queryset

@@ -3,7 +3,6 @@ import requests
 import time
 import logging
 from celery import shared_task
-from django.utils import timezone
 from .models import Monitor
 from .services import MonitorService
 
@@ -19,7 +18,7 @@ logger = logging.getLogger(__name__)
 )
 def check_monitor_task(self: Any, monitor_id: int) -> str:
     logger.info(f"Starting check for monitor_id={monitor_id}")
-    
+
     try:
         monitor = Monitor.objects.only("url", "interval", "is_active").get(
             id=monitor_id
@@ -41,7 +40,10 @@ def check_monitor_task(self: Any, monitor_id: int) -> str:
         )
         status_code = response.status_code
         is_up = 200 <= status_code < 300
-        logger.info(f"Monitor {monitor.url} responded with status_code={status_code}, is_up={is_up}")
+        logger.info(
+            f"Monitor {monitor.url} responded "
+            f"with status_code={status_code}, is_up={is_up}"
+        )
 
     except requests.RequestException as e:
         status_code = 0
@@ -58,5 +60,5 @@ def check_monitor_task(self: Any, monitor_id: int) -> str:
     # Schedule next check
     check_monitor_task.apply_async((monitor_id,), countdown=monitor.interval)
     logger.info(f"Next check for {monitor.url} scheduled in {monitor.interval}s")
-    
+
     return f"Checked {monitor.url}: {status_code} (Next in {monitor.interval}s)"

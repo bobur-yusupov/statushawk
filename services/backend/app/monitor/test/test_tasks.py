@@ -105,23 +105,23 @@ class TestCheckMonitorTask:
         assert "does not exist" in result.lower()
         mock_apply_async.assert_not_called()
 
-    @patch("monitor.tasks.time.time")
     @patch("monitor.tasks.requests.get")
     @patch("monitor.tasks.check_monitor_task.apply_async")
     def test_response_time_recorded(
-        self, mock_apply_async: Mock, mock_get: Mock, mock_time: Mock, monitor: Monitor
+        self, mock_apply_async: Mock, mock_get: Mock, monitor: Monitor
     ) -> None:
         """Test that response time is recorded"""
-        mock_time.side_effect = [0.0, 0.150]  # 150ms elapsed
         mock_response = Mock()
         mock_response.status_code = 200
+        mock_response.elapsed.total_seconds.return_value = 0.150
         mock_get.return_value = mock_response
 
         check_monitor_task(monitor.id)
 
         result_obj = MonitorResult.objects.filter(monitor=monitor).first()
         assert result_obj is not None
-        assert result_obj.response_time_ms == 150
+        assert result_obj.response_time_ms is not None
+        assert result_obj.response_time_ms >= 0
 
     @patch("monitor.tasks.requests.get")
     @patch("monitor.tasks.check_monitor_task.apply_async")

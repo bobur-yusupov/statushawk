@@ -1,8 +1,6 @@
 from pathlib import Path
 import os
 import sys
-import sentry_sdk
-from sentry_sdk.integrations.django import DjangoIntegration
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -189,3 +187,4 @@ CELERY_TASK_ROUTES = {
 
 TELEGRAM_BOT_NAME = os.environ.get("TELEGRAM_BOT_NAME", "statushawh_test_bot")
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", None)
+REQUEST_TIMEOUT = 10

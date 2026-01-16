@@ -1,95 +1,96 @@
-import requests
+from typing import Optional
 import logging
-from django.conf import settings
-from django.core.mail import send_mail
+from django.contrib.auth import get_user_model
 from common.services import BaseService
 from .models import NotificationChannel, NotificationLog
 from .crud import NotificationChannelCRUD, NotificationLogCRUD
+from .providers import PROVIDER_MAP, TelegramProvider
+from .utils import verify_telegram_token
 
 logger = logging.getLogger(__name__)
+User = get_user_model()
+
 
 class NotificationChannelService(BaseService[NotificationChannel]):
     """
     Handles CRUD for channel settings + The Logic to actually send alerts.
     """
+
     model = NotificationChannel
     crud_class = NotificationChannelCRUD
 
-    def send_alert(self, channel_id: int, subject: str, message: str):
-        channel = self.crud.get(id=channel_id) 
+    def _create_log(
+        self, channel: NotificationChannel, subject: str, message: str
+    ) -> NotificationLog:
+        """Create a notification log entry."""
+        return NotificationLogCRUD().create(
+            channel=channel,
+            monitor_name=subject,
+            payload_sent={"subject": subject, "message": message},
+            status=NotificationLog.Status.PENDING,
+        )
+
+    def _update_log(
+        self, log: NotificationLog, status: str, error_msg: Optional[str] = None
+    ) -> None:
+        NotificationLogCRUD().update(log, status=status, error_message=error_msg)
+
+    def send_alert(self, channel_id: int, subject: str, message: str) -> None:
+        channel = self.crud.get(id=channel_id)
         if not channel:
             logger.error(f"Channel {channel_id} not found.")
             return
 
-        log_crud = NotificationLogCRUD()
-        log = log_crud.create(
-            channel=channel,
-            monitor_name=subject,
-            payload_sent={"subject": subject, "message": message},
-            status=NotificationLog.Status.PENDING
-        )
+        log = self._create_log(channel=channel, subject=subject, message=message)
 
         try:
-            if channel.provider == NotificationChannel.Provider.SLACK:
-                self._send_slack(channel.config, subject, message)
-            
-            elif channel.provider == NotificationChannel.Provider.TELEGRAM:
-                self._send_telegram(channel.config, message)
-            
-            elif channel.provider == NotificationChannel.Provider.EMAIL:
-                self._send_email(channel.config, subject, message)
-            
-            elif channel.provider == NotificationChannel.Provider.WEBHOOK:
-                self._send_webhook(channel.config, subject, message)
+            provider = PROVIDER_MAP.get(channel.provider)
+            if not provider:
+                raise ValueError(f"Provider {channel.provider} is not supported.")
+            provider.send(channel.config, subject, message)
 
-            # 4. Success Update
-            log_crud.update(log, status=NotificationLog.Status.SUCCESS)
-            logger.info(f"✅ Alert sent to {channel}")
+            self._update_log(log, status=NotificationLog.Status.SUCCESS)
+            logger.info(f"Alert sent to {channel}")
 
         except Exception as e:
             # 5. Failure Update
-            log_crud.update(log, status=NotificationLog.Status.FAILURE, error_message=str(e))
-            logger.error(f"❌ Failed to send to {channel}: {e}")
+            self._update_log(
+                log, status=NotificationLog.Status.FAILURE, error_msg=str(e)
+            )
+            logger.error(f"Failed to send to {channel}: {e}")
             raise e
 
-    def _send_slack(self, config: dict, subject: str, message: str):
-        webhook_url = config.get("webhook_url")
-        if not webhook_url:
-            raise ValueError("Missing 'webhook_url'")
-
-        payload = {
-            "text": f"*{subject}*\n{message}",
-            "blocks": [
-                {"type": "section", "text": {"type": "mrkdwn", "text": f"*{subject}*"}},
-                {"type": "section", "text": {"type": "mrkdwn", "text": message}}
-            ]
-        }
-        requests.post(webhook_url, json=payload, timeout=10).raise_for_status()
-
-    def _send_telegram(self, config: dict, message: str):
-        chat_id = config.get("chat_id")
-        token = settings.TELEGRAM_BOT_TOKEN
-        if not chat_id or not token:
-            raise ValueError("Missing 'chat_id' or 'TELEGRAM_BOT_TOKEN'")
-
-        url = f"https://api.telegram.org/bot{token}/sendMessage"
-        requests.post(url, json={"chat_id": chat_id, "text": message}, timeout=10).raise_for_status()
-
-    def _send_email(self, config: dict, subject: str, message: str):
-        email = config.get("email")
-        if not email:
-            raise ValueError("Missing 'email'")
+    def link_telegram_channel(self, token: str, chat_id: str, user_name: str) -> str:
+        """
+        Links a Telegram chat to a user and returns the message to send back.
+        """
+        user_id = verify_telegram_token(token=token)
+        if not user_id:
+            return "Invalid or expired token."
 
         try:
-            send_mail(
-                subject, message, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False
-            )
-        except ConnectionRefusedError:
-            raise ValueError("SMTP server not configured or unavailable")
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return "System error: User not found."
 
-    def _send_webhook(self, config: dict, subject: str, message: str):
-        url = config.get("url")
-        if not url:
-            raise ValueError("Missing 'url'")
-            
-        requests.post(url, json={"subject": subject, "message": message}, timeout=10).raise_for_status()
+        exists = NotificationChannel.objects.filter(
+            provider=NotificationChannel.Provider.TELEGRAM, config__chat_id=chat_id
+        ).exists()
+
+        if exists:
+            return "You are already connected."
+
+        NotificationChannel.objects.create(
+            user=user,
+            provider=NotificationChannel.Provider.TELEGRAM,
+            name=f"Telegram ({user_name})",
+            config={"chat_id": chat_id},
+        )
+        return f"Connected! Hello {user.first_name}"
+
+    def send_telegram_reply(self, chat_id: str, message: str) -> None:
+        """Wrapper to send a simple reply."""
+        try:
+            TelegramProvider().send({"chat_id": chat_id}, subject="", message=message)
+        except Exception as e:
+            logger.error(f"Failed to reply to Telegram {chat_id}: {e}")
