@@ -1,10 +1,10 @@
-import { Activity, ArrowDown, ArrowUp, Globe, ServerCrash } from "lucide-react";
+import { Activity, ArrowUp, Globe, ServerCrash } from "lucide-react";
 import { StatsCard } from "@/components/StatsCard";
 import { Button } from "@/components/ui/button";
 import { useDashboardStats } from "./useDashboardStats";
 
 export default function OverviewPage() {
-  const { data: stats, isLoading, error } = useDashboardStats();
+  const { data: stats } = useDashboardStats();
 
   return (
     <div className="space-y-6">
@@ -17,7 +17,7 @@ export default function OverviewPage() {
           </p>
         </div>
         <div className="flex gap-2">
-            <Button>Add Monitor</Button>
+            <Button className="bg-zinc-700 text-white hover:bg-zinc-900">Add Monitor</Button>
         </div>
       </div>
 

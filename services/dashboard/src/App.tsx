@@ -8,6 +8,7 @@ import LoginPage from './features/auth/LoginPage';
 import MonitorsPage from './features/monitors/MonitorsPage';
 import MonitorDetailPage from './features/monitors/MonitorDetailPage';
 import RegisterPage from './features/auth/RegisterPage';
+import SettingsPage from './features/settings/SettingsPage';
 
 const queryClient = new QueryClient();
 
@@ -30,7 +31,7 @@ function App() {
                 <Route path='/' element={<OverviewPage />} />
                 <Route path='/monitors' element={<MonitorsPage />} />
                 <Route path='/monitors/:id' element={<MonitorDetailPage />} />
-                <Route path="/settings" element={<div>Settings Page</div>} />
+                <Route path="/settings" element={<SettingsPage />} />
               </Route>
             </Route>
 

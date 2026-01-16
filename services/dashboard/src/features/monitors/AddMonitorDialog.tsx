@@ -48,7 +48,7 @@ export function AddMonitorDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
+        <Button className="bg-zinc-700 text-white hover:bg-zinc-900">
           <Plus className="w-4 h-4 mr-2" /> Add Monitor
         </Button>
       </DialogTrigger>

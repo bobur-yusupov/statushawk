@@ -1,21 +1,29 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { deleteMonitor, getMonitors, monitorKeys, toggleMonitor } from "./api";
 import { AddMonitorDialog } from "./AddMonitorDialog";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, Globe, Pause, Play, Trash2 } from "lucide-react";
+import { Activity, Globe, Pause, Play, Trash2, ChevronLeft, ChevronRight } from "lucide-react"; // 👈 Added arrow icons
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
 export default function MonitorsPage() {
     const queryClient = useQueryClient();
+    const [page, setPage] = useState(1);
 
-    const { data: monitors, isLoading } = useQuery({
-        queryKey: monitorKeys.all,
-        queryFn: getMonitors,
+    const { data: response, isLoading, isPlaceholderData } = useQuery({
+        queryKey: [...monitorKeys.all, page],
+        queryFn: () => getMonitors(page),
+        placeholderData: keepPreviousData,
         refetchInterval: 5000
     });
+
+    // Extract the results array from the paginated object
+    // Default to empty array if data is undefined
+    const monitors = response?.results || [];
 
     const toggleMutation = useMutation({
         mutationFn: ({ id, active }: { id: number; active: boolean }) => toggleMonitor(id, active),
@@ -40,7 +48,7 @@ export default function MonitorsPage() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {monitors?.map((monitor) => (
+                {monitors.map((monitor) => (
                     <Card key={monitor.id} className="transition-all hover:shadow-md">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle>
@@ -52,7 +60,7 @@ export default function MonitorsPage() {
 
                             <Badge variant="outline" className={
                                 monitor.status === "UP"
-                                    ? "bg-green-50 text-red-700 border-red-200"
+                                    ? "bg-green-50 text-green-700 border-green-200" // Fixed typo (was text-red-700)
                                     : monitor.status === "DOWN"
                                         ? "bg-red-50 text-red-700 border-red-200"
                                         : "bg-zinc-100"
@@ -69,7 +77,7 @@ export default function MonitorsPage() {
                             <div className="flex flex-col gap-1 mt-2 text-xs text-zinc-500">
                                 <div className="flex justify-between">
                                     <span>Interval:</span>
-                                    <span className="font-mono">{monitor.interval}</span>
+                                    <span className="font-mono">{monitor.interval}s</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Added:</span>
@@ -81,6 +89,7 @@ export default function MonitorsPage() {
                                 <Button
                                     size="sm"
                                     variant="ghost"
+                                    onClick={() => toggleMutation.mutate({ id: monitor.id, active: !monitor.is_active })}
                                     className={monitor.is_active ? "text-amber-600 hover:text-amber-700" : "text-emerald-600 hover:text-green-50"}
                                 >
                                     {monitor.is_active ? (
@@ -89,12 +98,12 @@ export default function MonitorsPage() {
                                         <><Play className="w-4 h-4 mr-2" /> Resume</>
                                     )}
                                 </Button>
-                                <Button 
-                                    size="sm" 
+                                <Button
+                                    size="sm"
                                     variant="ghost"
                                     className="text-zinc-400 hover:text-red-600 hover:bg-red-50"
                                     onClick={() => {
-                                        if(confirm("Are you sure you want to delete this monitor?")) deleteMutation.mutate(monitor.id);
+                                        if (confirm("Are you sure you want to delete this monitor?")) deleteMutation.mutate(monitor.id);
                                     }}
                                 >
                                     <Trash2 className="w-4 h-4" />
@@ -104,6 +113,15 @@ export default function MonitorsPage() {
                     </Card>
                 ))}
             </div>
+
+            <PaginationControls
+                page={page}
+                setPage={setPage}
+                hasPrevious={!!response?.previous}
+                hasNext={!!response?.next}
+                totalCount={response?.count || 0}
+                isLoading={isPlaceholderData}
+            />
         </div>
-    )
+    );
 }
