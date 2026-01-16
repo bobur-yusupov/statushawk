@@ -80,9 +80,12 @@ class NotificationChannelService(BaseService[NotificationChannel]):
         if not email:
             raise ValueError("Missing 'email'")
 
-        send_mail(
-            subject, message, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False
-        )
+        try:
+            send_mail(
+                subject, message, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False
+            )
+        except ConnectionRefusedError:
+            raise ValueError("SMTP server not configured or unavailable")
 
     def _send_webhook(self, config: dict, subject: str, message: str):
         url = config.get("url")
