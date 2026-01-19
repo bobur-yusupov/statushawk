@@ -135,10 +135,20 @@ class TestMonitorIntegration:
     ) -> None:
         """Test getting dashboard stats through the API"""
         m1 = Monitor.objects.create(
-            user=user, name="M1", url=fake.url(), monitor_type="HTTP", is_active=True
+            user=user,
+            name="M1",
+            url=fake.url(),
+            monitor_type="HTTP",
+            is_active=True,
+            status=Monitor.StatusType.UP,
         )
         m2 = Monitor.objects.create(
-            user=user, name="M2", url=fake.url(), monitor_type="HTTP", is_active=True
+            user=user,
+            name="M2",
+            url=fake.url(),
+            monitor_type="HTTP",
+            is_active=True,
+            status=Monitor.StatusType.DOWN,
         )
 
         MonitorResult.objects.create(
