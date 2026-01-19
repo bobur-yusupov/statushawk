@@ -9,8 +9,8 @@ Monitor your infrastructure's health in real-time • Detect statistical anomali
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/status-active-success.svg)](#)
 [![Kubernetes](https://img.shields.io/badge/kubernetes-helm-blue)](#kubernetes-deployment-helm)
-[![Python](https://img.shields.io/badge/python-3.11-blue)](#)
-[![Django](https://img.shields.io/badge/django-5.0-green)](#)
+[![Python](https://img.shields.io/badge/python-3.12-blue)](#)
+[![Django](https://img.shields.io/badge/django-6.0-green)](#)
 [![React](https://img.shields.io/badge/react-18-blue)](#)
 
 [Features](#-key-features) • [Quick Start](#-quick-start) • [Architecture](#-system-architecture) • [Deployment](#-deployment-options) • [Contributing](#-contributing)
