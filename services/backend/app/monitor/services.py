@@ -228,7 +228,9 @@ class MonitorService(BaseService[Monitor]):
             return
 
         if stdev == 0:
-            logger.warning(f"Variance is 0 (All values {mean}ms). Cannot calculate Z-score.")
+            logger.warning(
+                f"Variance is 0 (All values {mean}ms). Cannot calculate Z-score."
+            )
             return
 
         z_score = (current_response_time - mean) / stdev
