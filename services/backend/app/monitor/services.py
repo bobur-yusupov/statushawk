@@ -3,6 +3,7 @@ from django.db.models import QuerySet, Avg
 from django.utils import timezone
 from datetime import timedelta, datetime
 import logging
+import statistics
 from common.services import BaseService
 from .models import Monitor, MonitorResult
 from .crud import MonitorCRUD, MonitorResultCRUD
@@ -63,6 +64,8 @@ class MonitorService(BaseService[Monitor]):
                 f"Status changed ({previous_status} -> {new_status}) for {monitor.name}"
             )
             self.dispatch_alerts(monitor, new_status)
+        elif is_up:
+            self.detect_anomaly(monitor, response_time)
 
     def dispatch_alerts(self, monitor: Monitor, new_status: str) -> None:
         """
@@ -194,3 +197,55 @@ class MonitorService(BaseService[Monitor]):
             }
             for res in failures_qs
         ]
+
+    def detect_anomaly(self, monitor: Monitor, current_response_time: int) -> None:
+        """
+        Calculates Z-Score to detect statistical outliers in response time.
+        """
+        history_values = list(
+            self.result_crud.filter(monitor=monitor)
+            .order_by("-created_at")
+            .values_list("response_time_ms", flat=True)[:21]
+        )
+
+        if len(history_values) < 11:
+            print(f"📉 Not enough data for anomaly detection. Count: {len(history_values)}")
+            return
+        
+        baseline = history_values[1:]
+        
+        try:
+            mean = statistics.mean(baseline)
+            stdev = statistics.stdev(baseline)
+        except statistics.StatisticsError:
+            return # Variance is zero or data invalid
+        
+        if stdev == 0:
+            print(f"📉 Variance is 0 (All values {mean}ms). Cannot calculate Z-score.")
+            return
+        
+        z_score = (current_response_time - mean) / stdev
+        print(f"🧮 Math: Current={current_response_time} | Avg={mean:.1f} | Stdev={stdev:.1f} | Z-Score={z_score:.2f}")
+
+        if z_score > 3:
+            print(f"⚠️ ANOMALY CONFIRMED: Z-Score {z_score:.2f} > 3.0")
+            logger.warning(
+                f"Anomaly detected for {monitor.name}: {current_response_time}ms "
+                f"(Avg: {mean:.0f}ms, Z-Score: {z_score:.2f})"
+            )
+            self._dispatch_anomaly_alert(monitor, current_response_time, mean)
+    
+    def _dispatch_anomaly_alert(self, monitor: Monitor, current: int, mean: float) -> None:
+        """Specific alert for performance degradation."""
+        channels = self.notification_crud.filter(user=monitor.user, is_active=True)
+
+        subject = f"⚠️ Performance Warning: {monitor.name}"
+        message = (
+            f"Monitor: {monitor.name}\n"
+            f"Current response: {current}ms\n"
+            f"Average (Last 20 checks): {mean:.0f}ms\n"
+            f"Analysis: Response time is abnormally high."
+        )
+
+        for channel in channels:
+            self._seng_single_alert(channel, subject, message)
