@@ -14,20 +14,10 @@ spec:
   minReplicas: {{ .Values.runner.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.runner.autoscaling.maxReplicas }}
   metrics:
-    {{- if .Values.runner.autoscaling.targetCPUUtilizationPercentage }}
     - type: Resource
       resource:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: {{ .Values.runner.autoscaling.targetCPUUtilizationPercentage }}
-    {{- end }}
-    {{- if .Values.runner.autoscaling.targetMemoryUtilizationPercentage }}
-    - type: Resource
-      resource:
-        name: memory
-        target:
-          type: Utilization
-          averageUtilization: {{ .Values.runner.autoscaling.targetMemoryUtilizationPercentage }}
-    {{- end }}
+          averageUtilization: {{ .Values.runner.autoscaling.targetCPUUtilizationPercentage | default 80 }}
 {{- end }}
