@@ -86,7 +86,7 @@ class MonitorResult(models.Model):
         ordering = ("-checked_at",)
         indexes = [
             models.Index(fields=["monitor", "checked_at"]),
-            models.Index(fields=["monitor", "-created_at"])
+            models.Index(fields=["monitor", "-created_at"]),
         ]
 
     def __str__(self) -> str:

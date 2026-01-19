@@ -104,7 +104,9 @@ class MonitorService(BaseService[Monitor]):
         except Exception as e:
             logger.error(f"Failed to queue task for channel {channel.id}: {e}")
 
-    def _format_alert_message(self, monitor: Monitor, new_status: str) -> tuple[str, str]:
+    def _format_alert_message(
+        self, monitor: Monitor, new_status: str
+    ) -> tuple[str, str]:
         """Formatting logic for alerts."""
         is_up = new_status == Monitor.StatusType.UP
         icon = "🟢" if is_up else "🔴"
@@ -209,23 +211,27 @@ class MonitorService(BaseService[Monitor]):
         )
 
         if len(history_values) < 11:
-            print(f"📉 Not enough data for anomaly detection. Count: {len(history_values)}")
+            print(
+                f"📉 Not enough data for anomaly detection. Count: {len(history_values)}"
+            )
             return
-        
-        baseline = history_values[1:]
-        
+
+        baseline = [v for v in history_values[1:] if v is not None]
+
+        if len(baseline) < 10:
+            return
+
         try:
             mean = statistics.mean(baseline)
             stdev = statistics.stdev(baseline)
         except statistics.StatisticsError:
-            return # Variance is zero or data invalid
-        
+            return
+
         if stdev == 0:
             print(f"📉 Variance is 0 (All values {mean}ms). Cannot calculate Z-score.")
             return
-        
+
         z_score = (current_response_time - mean) / stdev
-        print(f"🧮 Math: Current={current_response_time} | Avg={mean:.1f} | Stdev={stdev:.1f} | Z-Score={z_score:.2f}")
 
         if z_score > 3:
             print(f"⚠️ ANOMALY CONFIRMED: Z-Score {z_score:.2f} > 3.0")
@@ -234,8 +240,10 @@ class MonitorService(BaseService[Monitor]):
                 f"(Avg: {mean:.0f}ms, Z-Score: {z_score:.2f})"
             )
             self._dispatch_anomaly_alert(monitor, current_response_time, mean)
-    
-    def _dispatch_anomaly_alert(self, monitor: Monitor, current: int, mean: float) -> None:
+
+    def _dispatch_anomaly_alert(
+        self, monitor: Monitor, current: int, mean: float
+    ) -> None:
         """Specific alert for performance degradation."""
         channels = self.notification_crud.filter(user=monitor.user, is_active=True)
 
