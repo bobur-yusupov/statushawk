@@ -61,13 +61,13 @@ graph TD
 ## 🛠 Tech Stack
 
 ### Frontend
-- **React 18** with Vite for fast development
+- **React 19** with Vite for fast development
 - **Shadcn/UI** + TailwindCSS for modern UI components
 - **TanStack Query** (React Query) for data fetching
 - **Recharts** for data visualization
 
 ### Backend
-- **Python 3.11** + **Django 5**
+- **Python 3.12** + **Django 6**
 - **Django REST Framework** for API endpoints
 - **Celery** for asynchronous task processing
 - **NumPy/Statistics** for anomaly detection algorithms
