@@ -1,7 +1,7 @@
+import ipaddress
+from urllib.parse import urlparse
 from rest_framework import serializers
 from monitor.models import Monitor, MonitorResult
-from urllib.parse import urlparse
-import ipaddress
 
 
 class MonitorSerializer(serializers.ModelSerializer):
@@ -21,31 +21,51 @@ class MonitorSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "status", "created_at", "updated_at")
 
     def validate_url(self, value: str) -> str:
-        parsed = urlparse(value)
-        hostname = parsed.hostname
+        """
+        Validates URL format and blocks obvious private/local addresses.
+        Note: Deep DNS inspection happens in the worker to avoid API blocking.
+        """
+        try:
+            parsed = urlparse(value)
+        except Exception:
+            raise serializers.ValidationError("Invalid URL format.")
 
-        if not hostname:
-            raise serializers.ValidationError("Invalid URL")
-
-        if hostname.lower() in ["localhost", "127.0.0.1", "::1"]:
-            raise serializers.ValidationError("Monitoring localhost is not allowed")
-
-        if hostname == "169.254.169.254":
+        if parsed.scheme not in ["http", "https"]:
             raise serializers.ValidationError(
-                "Monitoring metadata endpoints is not allowed"
+                "Only HTTP and HTTPS schemes are supported"
             )
+
+        hostname = parsed.hostname
+        if not hostname:
+            raise serializers.ValidationError("URL is missing a hostname")
+
+        if self._is_forbidden_host(hostname):
+            raise serializers.ValidationError(
+                "Monitoring localhost, private IPs, or metadata services is not allowed"
+            )
+
+        return value
+
+    def _is_forbidden_host(self, hostname: str) -> bool:
+        """Checks if the hostname is a restricted local or private address."""
+        hostname_lower = hostname.lower()
+
+        if hostname_lower in ["localhost", "127.0.0.1", "::1"]:
+            return True
+
+        # 2. Block Cloud Metadata IP (AWS/GCP/Azure common magic IP)
+        if hostname_lower == "169.254.169.254":
+            return True
 
         try:
             ip = ipaddress.ip_address(hostname)
             if ip.is_private or ip.is_loopback or ip.is_link_local:
-                raise serializers.ValidationError(
-                    "Monitoring private IP addresses is not allowed"
-                )
+                return True
 
         except ValueError:
             pass
 
-        return value
+        return False
 
 
 class MonitorHistorySerializer(serializers.ModelSerializer):
@@ -53,10 +73,16 @@ class MonitorHistorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MonitorResult
-        fields = ["id", "status_code", "response_time_ms", "is_up", "created_at"]
+        fields = ("id", "status_code", "response_time_ms", "is_up", "created_at")
+        read_only_fields = fields
 
 
 class MonitorStatsSerializer(serializers.Serializer):
+    """
+    Serializer for aggregated dashboard statistics.
+    Does not correspond to a database model directly.
+    """
+
     period = serializers.CharField()
     total_checks = serializers.IntegerField()
     up_count = serializers.IntegerField()

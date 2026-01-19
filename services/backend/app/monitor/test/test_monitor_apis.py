@@ -422,6 +422,7 @@ class TestDashboardStatsAPI:
             url=fake.url(),
             monitor_type="HTTP",
             is_active=True,
+            status=Monitor.StatusType.UP,
         )
         monitor2 = Monitor.objects.create(
             user=user,
@@ -429,6 +430,7 @@ class TestDashboardStatsAPI:
             url=fake.url(),
             monitor_type="HTTP",
             is_active=True,
+            status=Monitor.StatusType.DOWN,
         )
         MonitorResult.objects.create(
             monitor=monitor1, status_code=200, response_time_ms=100, is_up=True

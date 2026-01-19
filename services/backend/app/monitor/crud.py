@@ -56,6 +56,7 @@ class MonitorResultCRUD(FullCRUD[MonitorResult]):
 class MonitorCRUD(FullCRUD[Monitor]):
     model = Monitor
 
+    @classmethod
     def filter_by_user(
         self, user: Any, is_active: Optional[bool] = None
     ) -> QuerySet[Monitor]:
