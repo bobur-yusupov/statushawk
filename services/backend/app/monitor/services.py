@@ -86,7 +86,7 @@ class MonitorService(BaseService[Monitor]):
             subject, message = self._format_alert_message(monitor, new_status)
 
             for channel in channels:
-                self._seng_single_alert(
+                self._send_single_alert(
                     channel=channel, subject=subject, message=message
                 )
 
@@ -95,7 +95,7 @@ class MonitorService(BaseService[Monitor]):
                 f"Failed to dispatch alerts for {monitor.name}: {e}", exc_info=True
             )
 
-    def _seng_single_alert(self, channel: Any, subject: str, message: str) -> None:
+    def _send_single_alert(self, channel: Any, subject: str, message: str) -> None:
         try:
             logger.info(f"Queueing alert for channel {channel.id} ({channel.provider})")
             send_notification_task.apply_async(
@@ -211,8 +211,8 @@ class MonitorService(BaseService[Monitor]):
         )
 
         if len(history_values) < 11:
-            print(
-                f"📉 Not enough data for anomaly detection. Count: {len(history_values)}"
+            logger.debug(
+                f"Not enough data for anomaly detection. Count: {len(history_values)}"
             )
             return
 
@@ -228,13 +228,13 @@ class MonitorService(BaseService[Monitor]):
             return
 
         if stdev == 0:
-            print(f"📉 Variance is 0 (All values {mean}ms). Cannot calculate Z-score.")
+            logger.warning(f"Variance is 0 (All values {mean}ms). Cannot calculate Z-score.")
             return
 
         z_score = (current_response_time - mean) / stdev
 
         if z_score > 3:
-            print(f"⚠️ ANOMALY CONFIRMED: Z-Score {z_score:.2f} > 3.0")
+            logger.warning(f"ANOMALY CONFIRMED: Z-Score {z_score:.2f} > 3.0")
             logger.warning(
                 f"Anomaly detected for {monitor.name}: {current_response_time}ms "
                 f"(Avg: {mean:.0f}ms, Z-Score: {z_score:.2f})"
@@ -247,7 +247,7 @@ class MonitorService(BaseService[Monitor]):
         """Specific alert for performance degradation."""
         channels = self.notification_crud.filter(user=monitor.user, is_active=True)
 
-        subject = f"⚠️ Performance Warning: {monitor.name}"
+        subject = f"Performance Warning: {monitor.name}"
         message = (
             f"Monitor: {monitor.name}\n"
             f"Current response: {current}ms\n"
@@ -256,4 +256,4 @@ class MonitorService(BaseService[Monitor]):
         )
 
         for channel in channels:
-            self._seng_single_alert(channel, subject, message)
+            self._send_single_alert(channel, subject, message)
