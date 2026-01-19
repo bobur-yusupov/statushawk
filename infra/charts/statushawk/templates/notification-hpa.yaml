@@ -1,0 +1,23 @@
+{{- if .Values.notification.autoscaling.enabled -}}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "statushawk.fullname" . }}-notification
+  labels:
+    {{- include "statushawk.labels" . | nindent 4 }}
+    app.kubernetes.io/component: notification
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "statushawk.fullname" . }}-notification
+  minReplicas: {{ .Values.notification.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.notification.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.notification.autoscaling.targetCPUUtilizationPercentage | default 80 }}
+{{- end }}
